@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 
-import { proxyJson } from "@/lib/bff";
+import { proxyJson } from "@/lib/shared/api/server";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;

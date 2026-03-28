@@ -1,6 +1,6 @@
-import { SellerDashboardClient } from "@/components/commerce/seller-dashboard-client";
-import { requireSeller, getSessionToken } from "@/lib/auth";
-import { getSellerProducts } from "@/lib/commerce";
+import { SellerDashboardClient } from "@/components/seller";
+import { requireSeller, getSessionToken } from "@/lib/auth/server";
+import { getSellerProducts } from "@/lib/seller";
 
 export default async function SellerPage() {
   await requireSeller("/seller");

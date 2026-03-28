@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
-import { getCurrentUser } from "@/lib/auth";
-import { env } from "@/lib/env";
-import { AuthStoreHydrator } from "@/components/providers/auth-store-hydrator";
-import { SplashOverlay } from "@/components/providers/splash-overlay";
+import { getCurrentUser } from "@/lib/auth/server";
+import { env } from "@/lib/shared/env";
+import { AuthStoreHydrator } from "@/components/shared/providers";
+import { SplashOverlay } from "@/components/shared/providers";
 
 export const metadata: Metadata = {
   metadataBase: new URL(env.siteUrl),

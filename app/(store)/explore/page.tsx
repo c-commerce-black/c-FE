@@ -1,10 +1,14 @@
 import Link from "next/link";
 
-import { ExploreFeed } from "@/components/commerce/explore-feed";
-import { ExploreSortDropdown } from "@/components/commerce/explore-sort-dropdown";
-import { createExploreFilters, getProductFeedPage } from "@/lib/commerce";
-import { CATEGORY_LABELS, EXPLORE_PAGE_SIZE } from "@/lib/constants";
-import { buildQueryString } from "@/lib/utils";
+import { ExploreFeed } from "@/components/catalog";
+import { ExploreSortDropdown } from "@/components/catalog";
+import {
+  CATEGORY_LABELS,
+  createExploreFilters,
+  EXPLORE_PAGE_SIZE,
+  getProductFeedPage,
+} from "@/lib/catalog";
+import { buildQueryString } from "@/lib/shared/utils";
 
 type SearchParams = Promise<{
   category?: string;

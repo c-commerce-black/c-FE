@@ -1,6 +1,6 @@
-import { AlertsClient } from "@/components/commerce/alerts-client";
-import { requireUser, getSessionToken } from "@/lib/auth";
-import { getAlerts } from "@/lib/commerce";
+import { AlertsClient } from "@/components/alerts";
+import { requireUser, getSessionToken } from "@/lib/auth/server";
+import { getAlerts } from "@/lib/alerts";
 
 export default async function AlertsPage() {
   await requireUser("/alerts");

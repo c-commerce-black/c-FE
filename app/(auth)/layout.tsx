@@ -1,4 +1,4 @@
-import { AuthShell } from "@/components/layout/auth-shell";
+import { AuthShell } from "@/components/shared/layout";
 
 export default function AuthLayout({
   children,

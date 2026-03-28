@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { SORT_OPTIONS } from "@/lib/constants";
-import { normalizeProductFeedPage } from "@/lib/commerce";
-import type { ProductListData } from "@/lib/types";
+import {
+  normalizeProductFeedPage,
+  type ProductListData,
+  SORT_OPTIONS,
+} from "@/lib/catalog";
 
 const productListFixture: ProductListData = {
   products: [

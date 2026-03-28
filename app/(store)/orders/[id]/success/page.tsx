@@ -1,12 +1,12 @@
-import { OrderActionPanel } from "@/components/commerce/order-action-panel";
+import { OrderActionPanel } from "@/components/orders";
 import Link from "next/link";
 
-import { OrderStepper } from "@/components/commerce/order-stepper";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
-import { getSessionToken, isSellerRole, requireUser } from "@/lib/auth";
-import { getOrder } from "@/lib/commerce";
-import { formatCurrency } from "@/lib/utils";
+import { OrderStepper } from "@/components/orders";
+import { Badge } from "@/components/shared/ui";
+import { Card } from "@/components/shared/ui";
+import { getSessionToken, isSellerRole, requireUser } from "@/lib/auth/server";
+import { getOrder } from "@/lib/orders";
+import { formatCurrency } from "@/lib/shared/utils";
 
 type Params = Promise<{ id: string }>;
 

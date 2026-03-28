@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 
-import { requestBackend } from "@/lib/backend";
-import { env } from "@/lib/env";
-import { getSessionTokenFromCookies, jsonError } from "@/lib/bff";
-import type { ApiResponse } from "@/lib/types";
+import { requestBackend } from "@/lib/shared/api";
+import { env } from "@/lib/shared/env";
+import { getSessionTokenFromCookies, jsonError } from "@/lib/shared/api/server";
+import type { ApiResponse } from "@/lib/shared/types";
 
 export async function POST() {
   try {

@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { requestBackend } from "@/lib/backend";
-import { getSessionCookieOptions } from "@/lib/auth";
-import { jsonError } from "@/lib/bff";
-import type { ApiResponse, User } from "@/lib/types";
+import type { User } from "@/lib/auth";
+import { requestBackend } from "@/lib/shared/api";
+import { getSessionCookieOptions } from "@/lib/auth/server";
+import { jsonError } from "@/lib/shared/api/server";
+import type { ApiResponse } from "@/lib/shared/types";
 
 export async function POST(request: NextRequest) {
   try {

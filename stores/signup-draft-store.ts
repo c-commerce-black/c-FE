@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 
-import type { Role, TermsKey } from "@/lib/types";
+import type { Role, TermsKey } from "@/lib/auth";
 
 type SignupDraft = {
   nickname: string;

@@ -1,12 +1,10 @@
 import Link from "next/link";
 import { ArrowRight, Search } from "lucide-react";
 
-import { HomeHero } from "@/components/commerce/home-hero";
-import { ProductCard } from "@/components/commerce/product-card";
-import { Card } from "@/components/ui/card";
-import { getProducts } from "@/lib/commerce";
-import { CATEGORY_LABELS } from "@/lib/constants";
-import { getRemainSeconds } from "@/lib/utils";
+import { HomeHero } from "@/components/catalog";
+import { ProductCard } from "@/components/catalog";
+import { Card } from "@/components/shared/ui";
+import { CATEGORY_LABELS, getProducts, getRemainSeconds } from "@/lib/catalog";
 
 export default async function HomePage() {
   const { products } = await getProducts({

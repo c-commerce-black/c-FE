@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { readApiResponse, sanitizeUserMessage } from "@/lib/api-error";
+import { readApiResponse, sanitizeUserMessage } from "@/lib/shared/api";
 
 describe("api error helpers", () => {
   it("falls back when the response body is an HTML document", async () => {

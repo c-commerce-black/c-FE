@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { getLogoDataUrl } from "@/lib/branding.server";
+import { getLogoDataUrl } from "@/lib/shared/branding/server";
 
 export const size = {
   width: 1200,

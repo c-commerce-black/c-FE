@@ -1,4 +1,4 @@
-import { PageTransitionTemplate } from "@/components/layout/page-transition-template";
+import { PageTransitionTemplate } from "@/components/shared/layout";
 
 export default function StoreTemplate({
   children,

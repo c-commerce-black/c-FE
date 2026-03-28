@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 
-import { TermsDetail } from "@/components/commerce/terms-detail";
-import { TERMS_DATA } from "@/lib/constants";
-import type { TermsKey } from "@/lib/types";
+import { TermsDetail } from "@/components/auth";
+import { TERMS_DATA } from "@/lib/auth";
+import type { TermsKey } from "@/lib/auth";
 
 type Params = Promise<{ termKey: TermsKey }>;
 

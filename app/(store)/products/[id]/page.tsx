@@ -2,15 +2,14 @@ import type { Metadata } from "next";
 import { cache } from "react";
 import { notFound } from "next/navigation";
 
-import { PriceHistoryChart } from "@/components/commerce/price-history-chart";
-import { ProductDetailActions } from "@/components/commerce/product-detail-actions";
-import { getProductDetail } from "@/lib/commerce";
-import { CATEGORY_LABELS } from "@/lib/constants";
+import { PriceHistoryChart } from "@/components/catalog";
+import { ProductDetailActions } from "@/components/catalog";
 import {
-  formatCurrency,
+  CATEGORY_LABELS,
+  getProductDetail,
   getRemainSeconds,
-  serializeJson,
-} from "@/lib/utils";
+} from "@/lib/catalog";
+import { formatCurrency, serializeJson } from "@/lib/shared/utils";
 
 const getProduct = cache(async (id: string) => {
   try {

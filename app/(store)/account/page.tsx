@@ -1,12 +1,12 @@
 import Link from "next/link";
 
-import { LogoutButton } from "@/components/commerce/logout-button";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
-import { getSessionToken, isSellerRole, requireUser } from "@/lib/auth";
-import { getOrders } from "@/lib/commerce";
-import { ORDER_STATUS_LABELS } from "@/lib/constants";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { LogoutButton } from "@/components/auth";
+import { Badge } from "@/components/shared/ui";
+import { Card } from "@/components/shared/ui";
+import { getSessionToken, isSellerRole, requireUser } from "@/lib/auth/server";
+import { getOrders } from "@/lib/orders";
+import { ORDER_STATUS_LABELS } from "@/lib/orders";
+import { formatCurrency, formatDate } from "@/lib/shared/utils";
 
 type SearchParams = Promise<{ forbidden?: string }>;
 

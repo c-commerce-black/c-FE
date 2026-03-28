@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { getProductFeedPage } from "@/lib/commerce";
-import type { ApiResponse, ProductFeedPage } from "@/lib/types";
+import { getProductFeedPage, type ProductFeedPage } from "@/lib/catalog";
+import type { ApiResponse } from "@/lib/shared/types";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;

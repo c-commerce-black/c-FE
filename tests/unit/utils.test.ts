@@ -1,14 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  buildQueryString,
-  formatCurrency,
   formatRemainTime,
-  getNextSellerOrderStatus,
-  getOrderStepIndex,
   getProductStatusTone,
   splitDuration,
-} from "@/lib/utils";
+} from "@/lib/catalog";
+import { getNextSellerOrderStatus, getOrderStepIndex } from "@/lib/orders";
+import { buildQueryString, formatCurrency } from "@/lib/shared/utils";
 
 describe("commerce utils", () => {
   it("formats currency in KRW", () => {

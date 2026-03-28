@@ -1,7 +1,7 @@
-import { CartClient } from "@/components/commerce/cart-client";
-import { EmptyState } from "@/components/ui/empty-state";
-import { getSessionToken, requireUser } from "@/lib/auth";
-import { getCart } from "@/lib/commerce";
+import { CartClient } from "@/components/cart";
+import { EmptyState } from "@/components/shared/ui";
+import { getSessionToken, requireUser } from "@/lib/auth/server";
+import { getCart } from "@/lib/cart";
 
 export default async function CartPage() {
   await requireUser("/cart");

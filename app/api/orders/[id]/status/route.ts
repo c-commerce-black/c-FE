@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 
-import { proxyJson } from "@/lib/bff";
+import { proxyJson } from "@/lib/shared/api/server";
 
 type Params = Promise<{ id: string }>;
 

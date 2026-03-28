@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-import { env } from "@/lib/env";
+import { env } from "@/lib/shared/env";
 
 const staticRoutes = [
   "",

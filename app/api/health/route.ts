@@ -1,4 +1,4 @@
-import { proxyJson } from "@/lib/bff";
+import { proxyJson } from "@/lib/shared/api/server";
 
 export async function GET() {
   return proxyJson({

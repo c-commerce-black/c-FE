@@ -1,4 +1,4 @@
-import { StoreShell } from "@/components/layout/store-shell";
+import { StoreShell } from "@/components/shared/layout";
 
 export default function StoreLayout({
   children,

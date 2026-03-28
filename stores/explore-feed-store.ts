@@ -3,7 +3,7 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
-import type { ExploreFeedState, ExploreFilters, Product } from "@/lib/types";
+import type { ExploreFeedState, ExploreFilters, Product } from "@/lib/catalog";
 
 type ExploreFeedStore = ExploreFeedState & {
   hydrateFeed: (payload: {
