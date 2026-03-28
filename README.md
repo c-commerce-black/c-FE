@@ -1,36 +1,119 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# C-commerce Frontend
+
+Mobile-first commerce storefront for expiry-soon deals, built with Next.js App Router.
+
+This repository contains the C-commerce web client, including:
+
+- buyer flows for explore, product detail, cart, alerts, orders, and account
+- seller flows for product registration and dashboard management
+- BFF-style route handlers for auth, products, cart, orders, alerts, and seller APIs
+- mobile app-frame UI with Tailwind CSS, Framer Motion, Lucide icons, and Zustand stores
+
+## Stack
+
+- Next.js 16.2.1
+- React 19
+- Tailwind CSS v4
+- Framer Motion
+- Lucide React
+- Zustand
+- Vitest
+- Playwright
+
+## Features
+
+- App Router structure with `(store)` and `(auth)` route groups
+- HttpOnly cookie session handling with a single `accessToken`
+- Infinite-scroll explore feed with filter and scroll restoration
+- Buyer and seller role-based flows backed by internal BFF routes
+- Product, cart, alerts, and order screens designed for a mobile app-style viewport
+- Dynamic icon and Open Graph image generation
+
+## Routes
+
+Core user-facing routes:
+
+- `/`
+- `/explore`
+- `/products/[id]`
+- `/alerts`
+- `/cart`
+- `/orders/[id]/success`
+- `/account`
+- `/login`
+- `/signup`
+- `/signup/terms/[termKey]`
+- `/seller`
+- `/seller/products/new`
+
+Internal API routes are exposed under `/api/*` and proxy the backend API while normalizing session handling.
+
+## Environment Variables
+
+Create a local environment file from `.env.example`.
+
+```bash
+cp .env.example .env.local
+```
+
+Required variables:
+
+```env
+API_BASE_URL=https://port-0-commerce-be-mmveg06487ac90d1.sel3.cloudtype.app
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+SESSION_COOKIE_NAME=cc_access_token
+```
 
 ## Getting Started
 
-First, run the development server:
+Install dependencies:
+
+```bash
+npm install
+```
+
+Start the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run dev         # start the Next.js dev server
+npm run build       # production build
+npm run start       # start the production server
+npm run lint        # run ESLint
+npm run test        # run unit tests with Vitest
+npm run test:e2e    # run Playwright end-to-end tests
+```
 
-## Learn More
+For webpack-based build verification used during development:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run build -- --webpack
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Testing
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Unit tests cover utilities, auth/session helpers, and commerce data behavior.
 
-## Deploy on Vercel
+```bash
+npm run test
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+End-to-end tests cover public navigation, explore filtering behavior, and visual review snapshots.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npx playwright test
+```
+
+## Project Notes
+
+- The UI is intentionally constrained to a centered mobile app frame.
+- Explore uses infinite scroll rather than visible pagination.
+- Public product list APIs and infinite-scroll feed APIs are separated internally so the frontend can keep both document-aligned contracts and app-specific UX behavior.
+- The official service logo is served from `/logo/c-commerce.png`.
