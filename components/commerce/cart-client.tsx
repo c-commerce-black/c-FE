@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { getApiErrorMessage, requestApi } from "@/lib/api-error";
 import type { CartItem, CartState } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
 import { useCheckoutStore } from "@/stores/checkout-store";
@@ -64,14 +65,13 @@ export function CartClient({ initialCart }: { initialCart: CartState }) {
     startTransition(async () => {
       setFeedback(null);
       const itemId = getCartItemId(item);
-      const response = await fetch(`/api/cart/${itemId}`, {
+      const { ok, payload } = await requestApi(`/api/cart/${itemId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ quantity }),
-      });
-      const payload = await response.json();
-      if (!response.ok || !payload.success) {
-        setFeedback(payload.error?.message ?? "수량 변경에 실패했습니다.");
+      }, "수량 변경에 실패했습니다.");
+      if (!ok || !payload.success) {
+        setFeedback(getApiErrorMessage(payload, "수량 변경에 실패했습니다."));
         return;
       }
 
@@ -95,17 +95,16 @@ export function CartClient({ initialCart }: { initialCart: CartState }) {
 
     startTransition(async () => {
       setFeedback(null);
-      const response = await fetch("/api/orders", {
+      const { ok, payload } = await requestApi<{ order: { id: string } }>("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           cartItemIds: selectedItems.map(getCartItemId),
           shippingAddress,
         }),
-      });
-      const payload = await response.json();
-      if (!response.ok || !payload.success) {
-        setFeedback(payload.error?.message ?? "주문 생성에 실패했습니다.");
+      }, "주문 생성에 실패했습니다.");
+      if (!ok || !payload.success) {
+        setFeedback(getApiErrorMessage(payload, "주문 생성에 실패했습니다."));
         return;
       }
 

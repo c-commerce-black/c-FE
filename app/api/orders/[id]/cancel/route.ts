@@ -11,5 +11,6 @@ export async function PATCH(
     path: `/api/orders/${id}/cancel`,
     method: "PATCH",
     auth: true,
+    fallbackMessage: "주문 취소에 실패했습니다.",
   });
 }

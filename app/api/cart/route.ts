@@ -7,6 +7,7 @@ export async function GET() {
     path: "/api/cart",
     method: "GET",
     auth: true,
+    fallbackMessage: "장바구니를 불러오지 못했습니다.",
   });
 }
 
@@ -17,6 +18,7 @@ export async function POST(request: NextRequest) {
     method: "POST",
     body,
     auth: true,
+    fallbackMessage: "장바구니에 담지 못했습니다.",
   });
 }
 
@@ -25,5 +27,6 @@ export async function DELETE() {
     path: "/api/cart",
     method: "DELETE",
     auth: true,
+    fallbackMessage: "장바구니를 비우지 못했습니다.",
   });
 }

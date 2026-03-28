@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { getApiErrorMessage, requestApi } from "@/lib/api-error";
 import { CATEGORY_LABELS } from "@/lib/constants";
 
 const categoryOptions = Object.entries(CATEGORY_LABELS);
@@ -49,7 +50,7 @@ export function SellerProductForm() {
     event.preventDefault();
     startTransition(async () => {
       setError(null);
-      const response = await fetch("/api/seller/products", {
+      const { ok, payload } = await requestApi("/api/seller/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -61,10 +62,9 @@ export function SellerProductForm() {
           description: values.description,
           imageUrl: values.imageUrl || undefined,
         }),
-      });
-      const payload = await response.json();
-      if (!response.ok || !payload.success) {
-        setError(payload.error?.message ?? "상품 등록에 실패했습니다.");
+      }, "상품 등록에 실패했습니다.");
+      if (!ok || !payload.success) {
+        setError(getApiErrorMessage(payload, "상품 등록에 실패했습니다."));
         return;
       }
       router.push("/seller");

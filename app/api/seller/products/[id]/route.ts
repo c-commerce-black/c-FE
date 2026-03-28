@@ -15,6 +15,7 @@ export async function PATCH(
     method: "PATCH",
     body,
     auth: true,
+    fallbackMessage: "상품 수정에 실패했습니다.",
   });
 }
 
@@ -27,5 +28,6 @@ export async function DELETE(
     path: `/api/seller/products/${id}`,
     method: "DELETE",
     auth: true,
+    fallbackMessage: "상품 삭제에 실패했습니다.",
   });
 }

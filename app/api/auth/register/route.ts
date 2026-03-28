@@ -11,6 +11,7 @@ export async function POST(request: NextRequest) {
     const { status, payload } = await requestBackend("/api/auth/register", {
       method: "POST",
       body,
+      fallbackMessage: "회원가입에 실패했습니다.",
     });
 
     const response = NextResponse.json((payload ?? {

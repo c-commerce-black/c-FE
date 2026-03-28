@@ -5,6 +5,7 @@ import { Heart, Minus, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
+import { getApiErrorMessage, requestApi } from "@/lib/api-error";
 import type { ProductDetail } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
 
@@ -40,22 +41,21 @@ export function ProductDetailActions({
   async function handleCart() {
     startSubmitting(async () => {
       setFeedback(null);
-      const response = await fetch("/api/cart", {
+      const { ok, status, payload } = await requestApi("/api/cart", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           productId: product.id,
           quantity,
         }),
-      });
+      }, "장바구니에 담지 못했습니다.");
 
-      const payload = await response.json();
-      if (!response.ok || !payload.success) {
-        if (response.status === 401) {
+      if (!ok || !payload.success) {
+        if (status === 401) {
           router.push(`/login?next=${encodeURIComponent(`/products/${product.id}`)}`);
           return;
         }
-        setFeedback(payload.error?.message ?? "장바구니에 담지 못했습니다.");
+        setFeedback(getApiErrorMessage(payload, "장바구니에 담지 못했습니다."));
         return;
       }
 
@@ -66,20 +66,19 @@ export function ProductDetailActions({
   async function handleWish() {
     startWish(async () => {
       setFeedback(null);
-      const response = await fetch("/api/alerts", {
+      const { ok, status, payload } = await requestApi("/api/alerts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           productId: product.id,
         }),
-      });
-      const payload = await response.json();
-      if (!response.ok || !payload.success) {
-        if (response.status === 401) {
+      }, "찜 처리에 실패했습니다.");
+      if (!ok || !payload.success) {
+        if (status === 401) {
           router.push(`/login?next=${encodeURIComponent(`/products/${product.id}`)}`);
           return;
         }
-        setFeedback(payload.error?.message ?? "찜 처리에 실패했습니다.");
+        setFeedback(getApiErrorMessage(payload, "찜 처리에 실패했습니다."));
         return;
       }
 

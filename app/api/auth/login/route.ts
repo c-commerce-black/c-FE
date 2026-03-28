@@ -11,6 +11,7 @@ export async function POST(request: NextRequest) {
     const { status, payload } = await requestBackend("/api/auth/login", {
       method: "POST",
       body,
+      fallbackMessage: "로그인에 실패했습니다.",
     });
 
     const response = NextResponse.json((payload ?? {

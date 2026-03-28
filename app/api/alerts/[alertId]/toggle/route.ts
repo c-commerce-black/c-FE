@@ -11,5 +11,6 @@ export async function PATCH(
     path: `/api/alerts/${alertId}/toggle`,
     method: "PATCH",
     auth: true,
+    fallbackMessage: "알림 토글에 실패했습니다.",
   });
 }

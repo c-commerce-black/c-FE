@@ -7,6 +7,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { getApiErrorMessage, requestApi } from "@/lib/api-error";
+import type { User } from "@/lib/types";
 import { useSignupDraftStore } from "@/stores/signup-draft-store";
 import { useAuthStore } from "@/stores/auth-store";
 
@@ -72,21 +74,24 @@ export function SignupForm() {
     startTransition(async () => {
       setError(null);
       setSuccess(null);
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          nickname,
-          email,
-          password,
-          role,
-          shopName: role === "SELLER" ? shopName : undefined,
-        }),
-      });
-      const payload = await response.json();
+      const { ok, payload } = await requestApi<{ user: User }>(
+        "/api/auth/register",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            nickname,
+            email,
+            password,
+            role,
+            shopName: role === "SELLER" ? shopName : undefined,
+          }),
+        },
+        "회원가입에 실패했습니다.",
+      );
 
-      if (!response.ok || !payload.success) {
-        setError(payload.error?.message ?? "회원가입에 실패했습니다.");
+      if (!ok || !payload.success) {
+        setError(getApiErrorMessage(payload, "회원가입에 실패했습니다."));
         return;
       }
 

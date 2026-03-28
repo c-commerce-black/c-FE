@@ -11,6 +11,7 @@ export async function POST() {
     const { status, payload } = await requestBackend("/api/auth/logout", {
       method: "POST",
       token,
+      fallbackMessage: "로그아웃에 실패했습니다.",
     });
 
     const response = NextResponse.json((payload ?? {

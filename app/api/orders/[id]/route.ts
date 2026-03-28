@@ -11,5 +11,6 @@ export async function GET(
     path: `/api/orders/${id}`,
     method: "GET",
     auth: true,
+    fallbackMessage: "주문 정보를 불러오지 못했습니다.",
   });
 }

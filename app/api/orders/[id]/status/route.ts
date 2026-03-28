@@ -16,5 +16,6 @@ export async function PATCH(
     method: "PATCH",
     body,
     auth: true,
+    fallbackMessage: "주문 상태 변경에 실패했습니다.",
   });
 }

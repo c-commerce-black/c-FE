@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+
 import { Button } from "@/components/ui/button";
 
 export default function StoreError({
@@ -9,6 +11,10 @@ export default function StoreError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  useEffect(() => {
+    console.error(error);
+  }, [error]);
+
   return (
     <div className="cc-grid py-16">
       <div className="rounded-[2rem] border border-border bg-white p-10 shadow-[var(--cc-shadow-soft)]">
@@ -19,7 +25,7 @@ export default function StoreError({
           화면을 불러오지 못했습니다
         </h1>
         <p className="mt-3 text-sm leading-6 text-text-secondary">
-          {error.message || "잠시 후 다시 시도해 주세요."}
+          잠시 후 다시 시도해 주세요.
         </p>
         <Button className="mt-8" onClick={reset}>
           다시 시도

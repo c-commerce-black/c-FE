@@ -15,6 +15,7 @@ export async function PATCH(
     method: "PATCH",
     body,
     auth: true,
+    fallbackMessage: "수량 변경에 실패했습니다.",
   });
 }
 
@@ -27,5 +28,6 @@ export async function DELETE(
     path: `/api/cart/${cartItemId}`,
     method: "DELETE",
     auth: true,
+    fallbackMessage: "장바구니 상품 삭제에 실패했습니다.",
   });
 }

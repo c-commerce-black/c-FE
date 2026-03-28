@@ -1,5 +1,5 @@
 import { env } from "@/lib/env";
-import type { ApiResponse } from "@/lib/types";
+import { readApiResponseWithMeta } from "@/lib/api-error";
 
 type Primitive = string | number | boolean;
 
@@ -7,6 +7,7 @@ type RequestBackendOptions = Omit<RequestInit, "body"> & {
   token?: string | null;
   query?: Record<string, Primitive | null | undefined>;
   body?: BodyInit | object | null;
+  fallbackMessage?: string;
 };
 
 export class BackendError extends Error {
@@ -32,25 +33,9 @@ function toUrl(path: string, query?: RequestBackendOptions["query"]) {
   return url;
 }
 
-async function parsePayload(response: Response) {
-  const text = await response.text();
-  if (!text) return null;
-  try {
-    return JSON.parse(text) as ApiResponse<unknown>;
-  } catch {
-    return {
-      success: false,
-      error: {
-        message: text || "알 수 없는 응답입니다.",
-        statusCode: response.status,
-      },
-    } satisfies ApiResponse<never>;
-  }
-}
-
 export async function requestBackend(
   path: string,
-  { token, query, headers, body, ...init }: RequestBackendOptions = {},
+  { token, query, headers, body, fallbackMessage, ...init }: RequestBackendOptions = {},
 ) {
   const requestHeaders = new Headers(headers);
   if (!requestHeaders.has("Accept")) {
@@ -73,7 +58,19 @@ export async function requestBackend(
     cache: init.cache ?? "no-store",
   });
 
-  const payload = await parsePayload(response);
+  const { payload, unexpected } = await readApiResponseWithMeta(
+    response,
+    fallbackMessage ?? "요청을 처리하지 못했습니다.",
+  );
+
+  if (unexpected) {
+    console.error("Unexpected backend response", {
+      path,
+      status: response.status,
+      contentType: response.headers.get("content-type"),
+    });
+  }
+
   return {
     ok: response.ok,
     status: response.status,

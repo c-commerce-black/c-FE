@@ -17,6 +17,35 @@ test("public navigation and auth redirect work", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "C-commerce" })).toBeVisible();
 });
 
+test("login hides raw html error bodies from users", async ({ page }) => {
+  await page.route("**/api/auth/login", async (route) => {
+    await route.fulfill({
+      status: 500,
+      contentType: "text/html; charset=utf-8",
+      body: `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta name="robots" content="noindex" />
+          </head>
+          <body>
+            <script src="https://files.cloudtype.io/errorpages/assets/app.js"></script>
+          </body>
+        </html>
+      `,
+    });
+  });
+
+  await page.goto("/login");
+  await page.getByLabel("이메일").fill("test@example.com");
+  await page.getByLabel("비밀번호").fill("wrong-password");
+  await page.getByRole("button", { name: "로그인" }).click();
+
+  await expect(page.getByText("로그인에 실패했습니다.")).toBeVisible();
+  await expect(page.locator("body")).not.toContainText("<!DOCTYPE html>");
+  await expect(page.locator("body")).not.toContainText("files.cloudtype.io");
+});
+
 test("explore sort dropdown toggles and keeps filters", async ({ page }) => {
   await page.goto("/explore?category=FOOD&q=%EC%9C%A0%EA%B8%B0%EB%86%8D");
   await expect(page.getByRole("button", { name: "정렬 선택" })).toContainText("마감임박순");

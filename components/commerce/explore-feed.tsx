@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from "r
 
 import { ProductCard } from "@/components/commerce/product-card";
 import { Card } from "@/components/ui/card";
+import { getApiErrorMessage, requestApi } from "@/lib/api-error";
 import { EXPLORE_PAGE_SIZE } from "@/lib/constants";
 import type { ExploreFilters, Product } from "@/lib/types";
 import { createExploreFilters } from "@/lib/commerce";
@@ -166,13 +167,16 @@ export function ExploreFeed({
       if (filtersRef.current.category) search.set("category", filtersRef.current.category);
       if (filtersRef.current.q) search.set("q", filtersRef.current.q);
 
-      const response = await fetch(`/api/products/feed?${search.toString()}`, {
-        cache: "no-store",
-      });
-      const payload = await response.json();
+      const { ok, payload } = await requestApi<{ items: Product[]; nextPage: number | null; hasMore: boolean; total: number }>(
+        `/api/products/feed?${search.toString()}`,
+        {
+          cache: "no-store",
+        },
+        "상품을 더 불러오지 못했습니다.",
+      );
 
-      if (!response.ok || !payload.success) {
-        throw new Error(payload.error?.message ?? "상품을 더 불러오지 못했습니다.");
+      if (!ok || !payload.success) {
+        throw new Error(getApiErrorMessage(payload, "상품을 더 불러오지 못했습니다."));
       }
 
       appendFeed({

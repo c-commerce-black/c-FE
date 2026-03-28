@@ -11,6 +11,7 @@ export async function GET(request: NextRequest) {
     path: "/api/seller/products",
     method: "GET",
     auth: true,
+    fallbackMessage: "판매 상품을 불러오지 못했습니다.",
     query: {
       page: page ? Number(page) : undefined,
       limit: limit ? Number(limit) : undefined,
@@ -25,5 +26,6 @@ export async function POST(request: NextRequest) {
     method: "POST",
     body,
     auth: true,
+    fallbackMessage: "상품 등록에 실패했습니다.",
   });
 }

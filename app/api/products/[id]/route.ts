@@ -10,5 +10,6 @@ export async function GET(
   return proxyJson({
     path: `/api/products/${id}`,
     method: "GET",
+    fallbackMessage: "상품 정보를 불러오지 못했습니다.",
   });
 }

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { getApiErrorMessage, requestApi } from "@/lib/api-error";
 import type { OrderStatus } from "@/lib/types";
 import { ORDER_STATUS_LABELS } from "@/lib/constants";
 import { getNextSellerOrderStatus } from "@/lib/utils";
@@ -29,13 +30,16 @@ export function OrderActionPanel({
   function handleCancel() {
     startTransition(async () => {
       setFeedback(null);
-      const response = await fetch(`/api/orders/${orderId}/cancel`, {
-        method: "PATCH",
-      });
-      const payload = await response.json();
+      const { ok, payload } = await requestApi<{ message?: string }>(
+        `/api/orders/${orderId}/cancel`,
+        {
+          method: "PATCH",
+        },
+        "주문 취소에 실패했습니다.",
+      );
 
-      if (!response.ok || !payload.success) {
-        setFeedback(payload.error?.message ?? "주문 취소에 실패했습니다.");
+      if (!ok || !payload.success) {
+        setFeedback(getApiErrorMessage(payload, "주문 취소에 실패했습니다."));
         return;
       }
 
@@ -49,15 +53,18 @@ export function OrderActionPanel({
 
     startTransition(async () => {
       setFeedback(null);
-      const response = await fetch(`/api/orders/${orderId}/status`, {
+      const { ok, payload } = await requestApi<{ order: { status: OrderStatus } }>(
+        `/api/orders/${orderId}/status`,
+        {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: nextSellerStatus }),
-      });
-      const payload = await response.json();
+        },
+        "주문 상태 변경에 실패했습니다.",
+      );
 
-      if (!response.ok || !payload.success) {
-        setFeedback(payload.error?.message ?? "주문 상태 변경에 실패했습니다.");
+      if (!ok || !payload.success) {
+        setFeedback(getApiErrorMessage(payload, "주문 상태 변경에 실패했습니다."));
         return;
       }
 

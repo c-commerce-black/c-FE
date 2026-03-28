@@ -16,12 +16,14 @@ export async function proxyJson({
   body,
   auth = false,
   query,
+  fallbackMessage,
 }: {
   path: string;
   method: string;
   body?: object | null;
   auth?: boolean;
   query?: Record<string, string | number | boolean | undefined | null>;
+  fallbackMessage?: string;
 }) {
   const token = auth ? await getSessionTokenFromCookies() : null;
   const { status, payload } = await requestBackend(path, {
@@ -29,6 +31,7 @@ export async function proxyJson({
     body,
     token,
     query,
+    fallbackMessage,
   });
 
   return NextResponse.json((payload ?? {

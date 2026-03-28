@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { getApiErrorMessage, requestApi } from "@/lib/api-error";
 import { SELLER_ORDER_STATUS_OPTIONS } from "@/lib/constants";
 import type { SellerOrderStatus } from "@/lib/types";
 
@@ -22,15 +23,18 @@ export function SellerOrderStatusCard() {
 
     startTransition(async () => {
       setFeedback(null);
-      const response = await fetch(`/api/orders/${orderId.trim()}/status`, {
+      const { ok, payload } = await requestApi(
+        `/api/orders/${orderId.trim()}/status`,
+        {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
-      });
-      const payload = await response.json();
+        },
+        "주문 상태 변경에 실패했습니다.",
+      );
 
-      if (!response.ok || !payload.success) {
-        setFeedback(payload.error?.message ?? "주문 상태 변경에 실패했습니다.");
+      if (!ok || !payload.success) {
+        setFeedback(getApiErrorMessage(payload, "주문 상태 변경에 실패했습니다."));
         return;
       }
 

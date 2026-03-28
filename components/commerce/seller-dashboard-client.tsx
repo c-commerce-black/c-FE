@@ -7,6 +7,7 @@ import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { getApiErrorMessage, requestApi } from "@/lib/api-error";
 import type { SellerProduct, SellerProductsData } from "@/lib/types";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
@@ -53,7 +54,9 @@ export function SellerDashboardClient({
     if (!editing) return;
     startTransition(async () => {
       setFeedback(null);
-      const response = await fetch(`/api/seller/products/${editing.id}`, {
+      const { ok, payload } = await requestApi<{
+        product: Partial<Pick<EditableSellerProduct, "name" | "currentPrice" | "stock" | "expiryDate">>;
+      }>(`/api/seller/products/${editing.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -62,10 +65,9 @@ export function SellerDashboardClient({
           stock: Number(draft.stock),
           expiryDate: draft.expiryDate,
         }),
-      });
-      const payload = await response.json();
-      if (!response.ok || !payload.success) {
-        setFeedback(payload.error?.message ?? "상품 수정에 실패했습니다.");
+      }, "상품 수정에 실패했습니다.");
+      if (!ok || !payload.success) {
+        setFeedback(getApiErrorMessage(payload, "상품 수정에 실패했습니다."));
         return;
       }
 
@@ -92,12 +94,15 @@ export function SellerDashboardClient({
     if (!deleting) return;
     startTransition(async () => {
       setFeedback(null);
-      const response = await fetch(`/api/seller/products/${deleting.id}`, {
-        method: "DELETE",
-      });
-      const payload = await response.json();
-      if (!response.ok || !payload.success) {
-        setFeedback(payload.error?.message ?? "상품 삭제에 실패했습니다.");
+      const { ok, payload } = await requestApi(
+        `/api/seller/products/${deleting.id}`,
+        {
+          method: "DELETE",
+        },
+        "상품 삭제에 실패했습니다.",
+      );
+      if (!ok || !payload.success) {
+        setFeedback(getApiErrorMessage(payload, "상품 삭제에 실패했습니다."));
         return;
       }
 

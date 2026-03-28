@@ -5,6 +5,7 @@ import Link from "next/link";
 
 import { Card } from "@/components/ui/card";
 import { Toggle } from "@/components/ui/toggle";
+import { getApiErrorMessage, requestApi } from "@/lib/api-error";
 import type { AlertItem } from "@/lib/types";
 import { formatCurrency, formatRemainTime } from "@/lib/utils";
 
@@ -75,14 +76,17 @@ export function AlertsClient({
       setFeedback(null);
 
       if (!item.alertId) {
-        const response = await fetch("/api/alerts", {
+        const { ok, payload } = await requestApi<{ alert: { id: string; isOn: boolean } }>(
+          "/api/alerts",
+          {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ productId: item.product.id }),
-        });
-        const payload = await response.json();
-        if (!response.ok || !payload.success) {
-          setFeedback(payload.error?.message ?? "찜 처리에 실패했습니다.");
+          },
+          "찜 처리에 실패했습니다.",
+        );
+        if (!ok || !payload.success) {
+          setFeedback(getApiErrorMessage(payload, "찜 처리에 실패했습니다."));
           return;
         }
 
@@ -96,12 +100,15 @@ export function AlertsClient({
         return;
       }
 
-      const response = await fetch(`/api/alerts/${item.alertId}/toggle`, {
-        method: "PATCH",
-      });
-      const payload = await response.json();
-      if (!response.ok || !payload.success) {
-        setFeedback(payload.error?.message ?? "알림 토글에 실패했습니다.");
+      const { ok, payload } = await requestApi<{ alert: { isOn: boolean } }>(
+        `/api/alerts/${item.alertId}/toggle`,
+        {
+          method: "PATCH",
+        },
+        "알림 토글에 실패했습니다.",
+      );
+      if (!ok || !payload.success) {
+        setFeedback(getApiErrorMessage(payload, "알림 토글에 실패했습니다."));
         return;
       }
 

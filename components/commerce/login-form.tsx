@@ -8,7 +8,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { getApiErrorMessage, requestApi } from "@/lib/api-error";
 import { LOGO_ALT, PUBLIC_LOGO_PATH } from "@/lib/branding";
+import type { User } from "@/lib/types";
 import { useAuthStore } from "@/stores/auth-store";
 
 export function LoginForm() {
@@ -33,15 +35,14 @@ export function LoginForm() {
     event.preventDefault();
     startTransition(async () => {
       setError(null);
-      const response = await fetch("/api/auth/login", {
+      const { ok, payload } = await requestApi<{ user: User }>("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values),
-      });
-      const payload = await response.json();
+      }, "로그인에 실패했습니다.");
 
-      if (!response.ok || !payload.success) {
-        setError(payload.error?.message ?? "로그인에 실패했습니다.");
+      if (!ok || !payload.success) {
+        setError(getApiErrorMessage(payload, "로그인에 실패했습니다."));
         return;
       }
 
