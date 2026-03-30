@@ -4,7 +4,7 @@ import Link from "next/link";
 import { OrderStepper } from "@/components/orders";
 import { Badge } from "@/components/shared/ui";
 import { Card } from "@/components/shared/ui";
-import { getSessionToken, isSellerRole, requireUser } from "@/lib/auth/server";
+import { getSessionToken, requireUser } from "@/lib/auth/server";
 import { getOrder } from "@/lib/orders";
 import { formatCurrency } from "@/lib/shared/utils";
 
@@ -16,7 +16,7 @@ export default async function OrderSuccessPage({
   params: Params;
 }) {
   const { id } = await params;
-  const user = await requireUser(`/orders/${id}/success`);
+  await requireUser(`/orders/${id}/success`);
   const token = await getSessionToken();
   const { order } = await getOrder(token as string, id);
   const cancelled = order.status === "CANCELLED";
@@ -61,8 +61,7 @@ export default async function OrderSuccessPage({
       <OrderActionPanel
         orderId={order.id}
         status={order.status}
-        canCancel={false}
-        canManageStatus={isSellerRole(user.role)}
+        canCancel={order.status === "PENDING"}
       />
       <Link
         href="/"

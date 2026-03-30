@@ -2,7 +2,7 @@ import { cache } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { isSellerRole, type User } from "@/lib/auth";
+import type { User } from "@/lib/auth";
 import { fetchBackend } from "@/lib/shared/api";
 import { env, isProduction } from "@/lib/shared/env";
 
@@ -42,14 +42,6 @@ export async function requireUser(nextPath: string) {
   const user = await getCurrentUser();
   if (!user) {
     redirect(`/login?next=${encodeURIComponent(nextPath)}`);
-  }
-  return user;
-}
-
-export async function requireSeller(nextPath: string) {
-  const user = await requireUser(nextPath);
-  if (!isSellerRole(user.role)) {
-    redirect("/account?forbidden=seller");
   }
   return user;
 }

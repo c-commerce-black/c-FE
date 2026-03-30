@@ -1,9 +1,9 @@
 import { SellerDashboardClient } from "@/components/seller";
-import { requireSeller, getSessionToken } from "@/lib/auth/server";
+import { getSessionToken, requireUser } from "@/lib/auth/server";
 import { getSellerProducts } from "@/lib/seller";
 
 export default async function SellerPage() {
-  await requireSeller("/seller");
+  await requireUser("/seller");
   const token = await getSessionToken();
   const data = await getSellerProducts(token as string);
 

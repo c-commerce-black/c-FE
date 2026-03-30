@@ -1,10 +1,8 @@
-export type Role = "BUYER" | "SELLER" | "ADMIN";
-
 export type User = {
   id: string;
   email: string;
   nickname: string;
-  role: Role;
+  sellerProfileId: string;
   shopName?: string | null;
 };
 

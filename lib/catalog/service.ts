@@ -21,7 +21,7 @@ type ProductQueryOptions = {
 
 function getMockProductsData({
   page = 1,
-  limit = 8,
+  limit = 20,
   category,
   sort = "expiry_asc",
 }: {
@@ -55,7 +55,7 @@ function getMockProductsData({
 
 async function getProductsPage({
   page = 1,
-  limit = 8,
+  limit = 20,
   category,
   sort = "expiry_asc",
   status,

@@ -14,12 +14,10 @@ export function OrderActionPanel({
   orderId,
   status,
   canCancel,
-  canManageStatus,
 }: {
   orderId: string;
   status: OrderStatus;
   canCancel: boolean;
-  canManageStatus: boolean;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -56,9 +54,9 @@ export function OrderActionPanel({
       const { ok, payload } = await requestApi<{ order: { status: OrderStatus } }>(
         `/api/orders/${orderId}/status`,
         {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: nextSellerStatus }),
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: nextSellerStatus }),
         },
         "주문 상태 변경에 실패했습니다.",
       );
@@ -75,7 +73,7 @@ export function OrderActionPanel({
     });
   }
 
-  if (!canCancel && !(canManageStatus && nextSellerStatus)) {
+  if (!canCancel && !nextSellerStatus) {
     return null;
   }
 
@@ -100,7 +98,7 @@ export function OrderActionPanel({
             {pending ? "처리 중..." : "주문 취소"}
           </Button>
         ) : null}
-        {canManageStatus && nextSellerStatus ? (
+        {nextSellerStatus ? (
           <Button size="lg" onClick={handleStatusUpdate} disabled={pending}>
             {pending
               ? "처리 중..."

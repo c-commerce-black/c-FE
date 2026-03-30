@@ -9,7 +9,7 @@ import { cn } from "@/lib/shared/utils";
 const navItems = [
   { href: "/", label: "홈", icon: Home },
   { href: "/explore", label: "네트워크", icon: Users },
-  { href: "/seller", label: "개발 Q&A", icon: MessageSquare },
+  { href: "/seller", label: "셀러", icon: MessageSquare },
   { href: "/alerts", label: "알림", icon: Bell },
   { href: "/account", label: "내 프로필", icon: UserRound },
 ] as const;

@@ -12,19 +12,6 @@ import type { User } from "@/lib/auth";
 import { useSignupDraftStore } from "@/stores/signup-draft-store";
 import { useAuthStore } from "@/stores/auth-store";
 
-const roleOptions = [
-  {
-    value: "BUYER",
-    label: "구매자",
-    description: "상품 탐색, 찜, 장바구니, 주문까지 이용합니다.",
-  },
-  {
-    value: "SELLER",
-    label: "판매자",
-    description: "상품 등록과 셀러 대시보드까지 함께 사용합니다.",
-  },
-] as const;
-
 const agreements = [
   { key: "terms", label: "이용약관", required: true },
   { key: "privacy", label: "개인정보 처리방침", required: true },
@@ -44,7 +31,6 @@ export function SignupForm() {
     email,
     password,
     passwordConfirm,
-    role,
     shopName,
     agreements: selectedAgreements,
     setField,
@@ -58,7 +44,7 @@ export function SignupForm() {
     () => Object.values(selectedAgreements).every(Boolean),
     [selectedAgreements],
   );
-  const next = searchParams.get("next") || (role === "SELLER" ? "/seller" : "/");
+  const next = searchParams.get("next") || "/";
 
   function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -83,8 +69,7 @@ export function SignupForm() {
             nickname,
             email,
             password,
-            role,
-            shopName: role === "SELLER" ? shopName : undefined,
+            shopName: shopName.trim() || undefined,
           }),
         },
         "회원가입에 실패했습니다.",
@@ -116,28 +101,8 @@ export function SignupForm() {
           </span>
         </h1>
         <p className="mt-3 text-base leading-7 text-text-secondary">
-          사용할 계정 유형을 선택하고 회원가입을 시작하세요.
+          닉네임과 상점명을 설정하고 회원가입을 시작하세요.
         </p>
-      </div>
-
-      <div className="grid gap-3">
-        {roleOptions.map((option) => (
-          <button
-            key={option.value}
-            type="button"
-            onClick={() => setField("role", option.value)}
-            className={`rounded-[1.5rem] border p-4 text-left transition ${
-              role === option.value
-                ? "border-brand-primary bg-brand-primary-muted"
-                : "border-border bg-white"
-            }`}
-          >
-            <p className="text-base font-bold text-foreground">{option.label}</p>
-            <p className="mt-2 text-sm leading-6 text-text-secondary">
-              {option.description}
-            </p>
-          </button>
-        ))}
       </div>
 
       <Input
@@ -167,15 +132,13 @@ export function SignupForm() {
         value={passwordConfirm}
         onChange={(event) => setField("passwordConfirm", event.target.value)}
       />
-      {role === "SELLER" ? (
-        <Input
-          label="상점명 (선택)"
-          placeholder="예: 신선마켓 한남점"
-          value={shopName}
-          onChange={(event) => setField("shopName", event.target.value)}
-          hint="비워두면 백엔드 기본 규칙에 따라 자동 생성될 수 있습니다."
-        />
-      ) : null}
+      <Input
+        label="상점명 (선택)"
+        placeholder="예: 신선마켓 한남점"
+        value={shopName}
+        onChange={(event) => setField("shopName", event.target.value)}
+        hint="비워두면 백엔드 기본 규칙에 따라 자동 생성될 수 있습니다."
+      />
 
       <div className="rounded-[1.75rem] border border-border bg-surface p-5">
         <button

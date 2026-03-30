@@ -2,14 +2,13 @@
 
 import { create } from "zustand";
 
-import type { Role, TermsKey } from "@/lib/auth";
+import type { TermsKey } from "@/lib/auth";
 
 type SignupDraft = {
   nickname: string;
   email: string;
   password: string;
   passwordConfirm: string;
-  role: Role;
   shopName: string;
   agreements: Record<TermsKey, boolean>;
   setField: <K extends Exclude<keyof SignupDraft, "agreements" | "setField" | "toggleAgreement" | "toggleAll">>(
@@ -32,7 +31,6 @@ const initialState = {
   email: "",
   password: "",
   passwordConfirm: "",
-  role: "BUYER" as Role,
   shopName: "",
   agreements: initialAgreements,
 };
