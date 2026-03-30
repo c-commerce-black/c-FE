@@ -109,7 +109,7 @@ export function SignupForm() {
         <p className="text-sm font-semibold uppercase tracking-[0.22em] text-brand-primary">
           회원가입
         </p>
-        <h1 className="mt-3 text-4xl font-black tracking-[-0.06em] text-foreground">
+        <h1 className="mt-3 whitespace-nowrap text-[clamp(1.35rem,7.2vw,2.25rem)] leading-[0.96] font-black tracking-[-0.08em] text-foreground">
           계정을 만들고 흐름을 이어가세요
         </h1>
         <p className="mt-3 text-base leading-7 text-text-secondary">
