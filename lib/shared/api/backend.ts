@@ -1,4 +1,5 @@
 import { env } from "@/lib/shared/env";
+import type { ApiResponse } from "@/lib/shared/types";
 
 import { BackendError } from "./errors";
 import { readApiResponseWithMeta } from "./response";
@@ -10,6 +11,8 @@ type RequestBackendOptions = Omit<RequestInit, "body"> & {
   query?: Record<string, Primitive | null | undefined>;
   body?: BodyInit | object | null;
   fallbackMessage?: string;
+  emptyResponsePayload?: ApiResponse<unknown>;
+  suppressUnexpectedResponseLog?: boolean;
 };
 
 function toUrl(path: string, query?: RequestBackendOptions["query"]) {
@@ -25,7 +28,16 @@ function toUrl(path: string, query?: RequestBackendOptions["query"]) {
 
 export async function requestBackend(
   path: string,
-  { token, query, headers, body, fallbackMessage, ...init }: RequestBackendOptions = {},
+  {
+    token,
+    query,
+    headers,
+    body,
+    fallbackMessage,
+    emptyResponsePayload,
+    suppressUnexpectedResponseLog,
+    ...init
+  }: RequestBackendOptions = {},
 ) {
   const requestHeaders = new Headers(headers);
   if (!requestHeaders.has("Accept")) {
@@ -53,16 +65,24 @@ export async function requestBackend(
     cache: init.cache ?? "no-store",
   });
 
-  const { payload, unexpected } = await readApiResponseWithMeta(
+  const { payload: parsedPayload, unexpected, reason } = await readApiResponseWithMeta(
     response,
     fallbackMessage ?? "요청을 처리하지 못했습니다.",
   );
+  const hasHandledEmptySuccessResponse =
+    response.ok &&
+    !!emptyResponsePayload &&
+    (reason === "empty-body" || reason === "empty-object");
+  const payload = hasHandledEmptySuccessResponse
+    ? emptyResponsePayload
+    : parsedPayload;
 
-  if (unexpected) {
+  if (unexpected && !suppressUnexpectedResponseLog && !hasHandledEmptySuccessResponse) {
     console.error("Unexpected backend response", {
       path,
       status: response.status,
       contentType: response.headers.get("content-type"),
+      reason,
     });
   }
 

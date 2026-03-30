@@ -8,16 +8,21 @@ import type { ApiResponse } from "@/lib/shared/types";
 export async function POST() {
   try {
     const token = await getSessionTokenFromCookies();
+    const emptyResponsePayload = {
+      success: true,
+      data: { message: "로그아웃 되었습니다." },
+    } as const satisfies ApiResponse<unknown>;
     const { status, payload } = await requestBackend("/api/auth/logout", {
       method: "POST",
       token,
       fallbackMessage: "로그아웃에 실패했습니다.",
+      emptyResponsePayload,
     });
-
-    const response = NextResponse.json((payload ?? {
-      success: true,
-      data: { message: "로그아웃 되었습니다." },
-    }) as ApiResponse<unknown>, { status });
+    const responseStatus =
+      status === 204 && payload && "success" in payload && payload.success ? 200 : status;
+    const response = NextResponse.json(payload as ApiResponse<unknown>, {
+      status: responseStatus,
+    });
     response.cookies.delete(env.sessionCookieName);
     return response;
   } catch {

@@ -2,6 +2,20 @@ import type { ApiResponse } from "@/lib/shared/types";
 
 const MAX_VISIBLE_MESSAGE_LENGTH = 140;
 
+export type UnexpectedApiResponseReason =
+  | "empty-body"
+  | "empty-object"
+  | "invalid-json"
+  | "invalid-shape"
+  | "non-json"
+  | "plain-message";
+
+type ApiResponseMeta<T> = {
+  payload: ApiResponse<T>;
+  unexpected: boolean;
+  reason?: UnexpectedApiResponseReason;
+};
+
 const SUSPICIOUS_MESSAGE_PATTERNS = [
   /<!doctype/i,
   /<(html|body|head|meta|script|style|link)\b/i,
@@ -48,7 +62,7 @@ function normalizeApiResponse<T>(
   value: unknown,
   statusCode: number,
   fallbackMessage: string,
-): { payload: ApiResponse<T>; unexpected: boolean } {
+): ApiResponseMeta<T> {
   if (isApiResponseShape<T>(value)) {
     if (value.success) {
       return { payload: value, unexpected: false };
@@ -71,6 +85,14 @@ function normalizeApiResponse<T>(
     };
   }
 
+  if (isRecord(value) && Object.keys(value).length === 0) {
+    return {
+      payload: createFallbackResponse<T>(statusCode, fallbackMessage),
+      unexpected: true,
+      reason: "empty-object",
+    };
+  }
+
   if (isRecord(value) && typeof value.message === "string") {
     return {
       payload: createFallbackResponse<T>(
@@ -78,12 +100,14 @@ function normalizeApiResponse<T>(
         sanitizeUserMessage(value.message, fallbackMessage),
       ),
       unexpected: true,
+      reason: "plain-message",
     };
   }
 
   return {
     payload: createFallbackResponse<T>(statusCode, fallbackMessage),
     unexpected: true,
+    reason: "invalid-shape",
   };
 }
 
@@ -98,6 +122,7 @@ function parseApiResponseText<T>(
     return {
       payload: createFallbackResponse<T>(statusCode, fallbackMessage),
       unexpected: true,
+      reason: "empty-body" as const,
     };
   }
 
@@ -111,6 +136,7 @@ function parseApiResponseText<T>(
     return {
       payload: createFallbackResponse<T>(statusCode, fallbackMessage),
       unexpected: true,
+      reason: "non-json" as const,
     };
   }
 
@@ -120,6 +146,7 @@ function parseApiResponseText<T>(
     return {
       payload: createFallbackResponse<T>(statusCode, fallbackMessage),
       unexpected: true,
+      reason: "invalid-json" as const,
     };
   }
 }
