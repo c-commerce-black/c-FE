@@ -58,10 +58,10 @@ Next.js App Router 기반으로 구축한, 유통기한 임박 특가를 위한 
 cp .env.example .env.local
 ```
 
-필수 변수:
+개발에서는 권장 변수이며, 배포 환경에서는 필수입니다:
 
 ```env
-API_BASE_URL=https://port-0-commerce-be-mmveg06487ac90d1.sel3.cloudtype.app
+API_BASE_URL=http://localhost:8080
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 SESSION_COOKIE_NAME=cc_access_token
 ```

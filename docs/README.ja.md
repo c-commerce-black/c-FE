@@ -58,10 +58,10 @@ Next.js App Router で構築した、賞味期限・消費期限が近い特価�
 cp .env.example .env.local
 ```
 
-必要な変数:
+開発では推奨、デプロイ環境では必須の変数:
 
 ```env
-API_BASE_URL=https://port-0-commerce-be-mmveg06487ac90d1.sel3.cloudtype.app
+API_BASE_URL=http://localhost:8080
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 SESSION_COOKIE_NAME=cc_access_token
 ```

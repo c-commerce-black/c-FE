@@ -58,10 +58,10 @@ Create a local environment file from `.env.example`.
 cp .env.example .env.local
 ```
 
-Required variables:
+Recommended variables for development, required for deployed environments:
 
 ```env
-API_BASE_URL=https://port-0-commerce-be-mmveg06487ac90d1.sel3.cloudtype.app
+API_BASE_URL=http://localhost:8080
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 SESSION_COOKIE_NAME=cc_access_token
 ```

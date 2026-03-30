@@ -116,8 +116,7 @@ export function SignupForm() {
           </span>
         </h1>
         <p className="mt-3 text-base leading-7 text-text-secondary">
-          BUYER 또는 SELLER 역할을 선택해 동일한 백엔드 계약 위에서 실제
-          플로우를 바로 사용할 수 있습니다.
+          사용할 계정 유형을 선택하고 회원가입을 시작하세요.
         </p>
       </div>
 

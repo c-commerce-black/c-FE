@@ -1,11 +1,26 @@
-const DEFAULT_API_BASE_URL =
-  "https://port-0-commerce-be-mmveg06487ac90d1.sel3.cloudtype.app";
-const DEFAULT_SITE_URL = "http://localhost:3000";
+export const isProduction = process.env.NODE_ENV === "production";
 
-export const env = {
-  apiBaseUrl: process.env.API_BASE_URL ?? DEFAULT_API_BASE_URL,
-  siteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? DEFAULT_SITE_URL,
-  sessionCookieName: process.env.SESSION_COOKIE_NAME ?? "cc_access_token",
+const DEFAULT_DEV_URLS = {
+  API_BASE_URL: "http://localhost:8080",
+  NEXT_PUBLIC_SITE_URL: "http://localhost:3000",
 } as const;
 
-export const isProduction = process.env.NODE_ENV === "production";
+function readUrlEnv(name: keyof typeof DEFAULT_DEV_URLS) {
+  const value =
+    process.env[name]?.trim() || (!isProduction ? DEFAULT_DEV_URLS[name] : undefined);
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${name}`);
+  }
+
+  try {
+    return new URL(value).toString();
+  } catch {
+    throw new Error(`Invalid URL in environment variable: ${name}`);
+  }
+}
+
+export const env = {
+  apiBaseUrl: readUrlEnv("API_BASE_URL"),
+  siteUrl: readUrlEnv("NEXT_PUBLIC_SITE_URL"),
+  sessionCookieName: process.env.SESSION_COOKIE_NAME ?? "cc_access_token",
+} as const;
