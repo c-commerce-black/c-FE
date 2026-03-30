@@ -109,8 +109,11 @@ export function SignupForm() {
         <p className="text-sm font-semibold uppercase tracking-[0.22em] text-brand-primary">
           회원가입
         </p>
-        <h1 className="mt-3 whitespace-nowrap text-[clamp(1.35rem,7.2vw,2.25rem)] leading-[0.96] font-black tracking-[-0.08em] text-foreground">
-          계정을 만들고 흐름을 이어가세요
+        <h1 className="mt-3 text-[clamp(1.2rem,6.4vw,2rem)] leading-[1.2] font-black tracking-[-0.08em] text-foreground">
+          <span className="block whitespace-nowrap">계정을 만들고</span>
+          <span className="mt-[0.18em] block whitespace-nowrap pl-[1.05em]">
+            흐름을 이어가세요
+          </span>
         </h1>
         <p className="mt-3 text-base leading-7 text-text-secondary">
           BUYER 또는 SELLER 역할을 선택해 동일한 백엔드 계약 위에서 실제
