@@ -5,6 +5,36 @@ import type { ApiResponse } from "@/lib/shared/types";
 
 import { getSessionTokenFromCookies } from "./cookies";
 
+export function resolveApiPayload<T>(
+  payload: ApiResponse<T> | null | undefined,
+  status: number,
+  fallbackMessage: string,
+): ApiResponse<T> {
+  return (
+    payload ?? {
+      success: false,
+      error: {
+        message: fallbackMessage,
+        statusCode: status,
+      },
+    }
+  );
+}
+
+export function jsonApiResponse<T>({
+  status,
+  payload,
+  fallbackMessage,
+}: {
+  status: number;
+  payload?: ApiResponse<T> | null;
+  fallbackMessage: string;
+}) {
+  return NextResponse.json(resolveApiPayload(payload, status, fallbackMessage), {
+    status,
+  });
+}
+
 export async function proxyJson({
   path,
   method,
@@ -29,16 +59,11 @@ export async function proxyJson({
     fallbackMessage,
   });
 
-  return NextResponse.json(
-    (payload ?? {
-      success: false,
-      error: {
-        message: "응답을 처리할 수 없습니다.",
-        statusCode: status,
-      },
-    }) as ApiResponse<unknown>,
-    { status },
-  );
+  return jsonApiResponse({
+    status,
+    payload,
+    fallbackMessage: "응답을 처리할 수 없습니다.",
+  });
 }
 
 export function jsonError(message: string, status = 500) {

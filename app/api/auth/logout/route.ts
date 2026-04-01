@@ -1,8 +1,10 @@
-import { NextResponse } from "next/server";
-
 import { requestBackend } from "@/lib/shared/api";
 import { env } from "@/lib/shared/env";
-import { getSessionTokenFromCookies, jsonError } from "@/lib/shared/api/server";
+import {
+  getSessionTokenFromCookies,
+  jsonApiResponse,
+  jsonError,
+} from "@/lib/shared/api/server";
 import type { ApiResponse } from "@/lib/shared/types";
 
 export async function POST() {
@@ -20,8 +22,10 @@ export async function POST() {
     });
     const responseStatus =
       status === 204 && payload && "success" in payload && payload.success ? 200 : status;
-    const response = NextResponse.json(payload as ApiResponse<unknown>, {
+    const response = jsonApiResponse({
       status: responseStatus,
+      payload,
+      fallbackMessage: "로그아웃에 실패했습니다.",
     });
     response.cookies.delete(env.sessionCookieName);
     return response;
