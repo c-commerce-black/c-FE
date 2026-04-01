@@ -1,15 +1,46 @@
 import { CartClient } from "@/components/cart";
 import { EmptyState } from "@/components/shared/ui";
+import { PageFallbackNotice } from "@/components/shared/ui";
 import { getSessionToken, requireUser } from "@/lib/auth/server";
 import { getCart } from "@/lib/cart";
+import { createPageLoadState, type PageLoadState } from "@/lib/shared/types";
+
+async function getCartPageData(token: string): Promise<{
+  cart: Awaited<ReturnType<typeof getCart>>;
+  loadState: PageLoadState;
+}> {
+  try {
+    return {
+      cart: await getCart(token),
+      loadState: createPageLoadState(),
+    };
+  } catch {
+    return {
+      cart: {
+        items: [],
+        summary: {
+          totalAmount: 0,
+          discountAmount: 0,
+          shippingFee: 0,
+          finalAmount: 0,
+        },
+        priceChanged: false,
+      },
+      loadState: createPageLoadState(true),
+    };
+  }
+}
 
 export default async function CartPage() {
   await requireUser("/cart");
   const token = await getSessionToken();
-  const cart = await getCart(token as string);
+  const { cart, loadState } = await getCartPageData(token as string);
 
   return (
-    <div className="cc-grid py-5">
+    <div className="cc-grid space-y-4 py-5">
+      {loadState.isFallback && loadState.message ? (
+        <PageFallbackNotice message={loadState.message} />
+      ) : null}
       {cart.items.length ? (
         <CartClient initialCart={cart} />
       ) : (

@@ -3,6 +3,7 @@ export * from "./button";
 export * from "./card";
 export * from "./empty-state";
 export * from "./input";
+export * from "./page-fallback-notice";
 export * from "./route-error-panel";
 export * from "./textarea";
 export * from "./toggle";

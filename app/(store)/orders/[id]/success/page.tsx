@@ -4,11 +4,31 @@ import Link from "next/link";
 import { OrderStepper } from "@/components/orders";
 import { Badge } from "@/components/shared/ui";
 import { Card } from "@/components/shared/ui";
+import { PageFallbackNotice } from "@/components/shared/ui";
 import { getSessionToken, requireUser } from "@/lib/auth/server";
 import { getOrder } from "@/lib/orders";
+import { createPageLoadState, type PageLoadState } from "@/lib/shared/types";
 import { formatCurrency } from "@/lib/shared/utils";
 
 type Params = Promise<{ id: string }>;
+
+async function getOrderPageData(token: string, id: string): Promise<{
+  order: Awaited<ReturnType<typeof getOrder>>["order"] | null;
+  loadState: PageLoadState;
+}> {
+  try {
+    const { order } = await getOrder(token, id);
+    return {
+      order,
+      loadState: createPageLoadState(),
+    };
+  } catch {
+    return {
+      order: null,
+      loadState: createPageLoadState(true),
+    };
+  }
+}
 
 export default async function OrderSuccessPage({
   params,
@@ -18,7 +38,49 @@ export default async function OrderSuccessPage({
   const { id } = await params;
   await requireUser(`/orders/${id}/success`);
   const token = await getSessionToken();
-  const { order } = await getOrder(token as string, id);
+  const { order, loadState } = await getOrderPageData(token as string, id);
+  if (!order) {
+    return (
+      <div className="cc-grid space-y-6 py-5">
+        <section className="pt-6 text-center">
+          <div className="mx-auto flex size-[84px] items-center justify-center rounded-full border-[3px] border-brand-primary bg-brand-primary-muted/40">
+            <span className="text-[42px] font-black text-brand-primary">!</span>
+          </div>
+          <h1 className="mt-4 text-[24px] font-black tracking-[-0.05em] text-foreground">
+            주문 정보를 확인 중입니다
+          </h1>
+          <p className="mt-1 text-[14px] text-text-secondary">
+            주문 상세를 불러오지 못해 요약 정보만 표시하고 있어요.
+          </p>
+        </section>
+        {loadState.isFallback && loadState.message ? (
+          <PageFallbackNotice message={loadState.message} />
+        ) : null}
+        <Card className="space-y-4 p-5">
+          <p className="text-[16px] font-black tracking-[-0.04em] text-foreground">
+            주문 정보를 불러오지 못했습니다
+          </p>
+          <p className="text-[14px] leading-6 text-text-secondary">
+            잠시 후 다시 확인하거나 홈에서 다른 상품을 둘러보세요.
+          </p>
+          <div className="flex gap-2">
+            <Link
+              href="/account"
+              className="inline-flex h-12 flex-1 items-center justify-center rounded-[16px] border border-border bg-white px-5 text-[15px] font-semibold text-foreground transition hover:bg-surface-sunken"
+            >
+              내 정보 보기
+            </Link>
+            <Link
+              href="/"
+              className="inline-flex h-12 flex-1 items-center justify-center rounded-[16px] bg-brand-primary px-5 text-[15px] font-semibold text-white transition hover:bg-brand-primary-hover"
+            >
+              홈으로 이동
+            </Link>
+          </div>
+        </Card>
+      </div>
+    );
+  }
   const cancelled = order.status === "CANCELLED";
 
   return (

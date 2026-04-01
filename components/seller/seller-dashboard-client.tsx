@@ -6,6 +6,7 @@ import { X } from "lucide-react";
 
 import { Button } from "@/components/shared/ui";
 import { Card } from "@/components/shared/ui";
+import { EmptyState } from "@/components/shared/ui";
 import { Input } from "@/components/shared/ui";
 import { getApiErrorMessage, requestApi } from "@/lib/shared/api";
 import type { SellerProduct, SellerProductsData } from "@/lib/seller";
@@ -157,49 +158,58 @@ export function SellerDashboardClient({
       </section>
 
       <section className="space-y-3">
-        {products.map((product) => (
-          <Card key={product.id} className="p-4">
-            <div className="space-y-4">
-              <div>
-                <div className="flex items-start justify-between gap-3">
-                  <h2 className="text-[18px] font-black tracking-[-0.04em] text-foreground">
-                    {product.name}
-                  </h2>
-                  <span
-                    className={`rounded-full px-3 py-1 text-[13px] font-bold ${
-                      product.status === "EXPIRY_SOON"
-                        ? "bg-[#fff1f5] text-brand-primary"
-                        : "bg-[#eefbf2] text-[#22c55e]"
-                    }`}
+        {products.length ? (
+          products.map((product) => (
+            <Card key={product.id} className="p-4">
+              <div className="space-y-4">
+                <div>
+                  <div className="flex items-start justify-between gap-3">
+                    <h2 className="text-[18px] font-black tracking-[-0.04em] text-foreground">
+                      {product.name}
+                    </h2>
+                    <span
+                      className={`rounded-full px-3 py-1 text-[13px] font-bold ${
+                        product.status === "EXPIRY_SOON"
+                          ? "bg-[#fff1f5] text-brand-primary"
+                          : "bg-[#eefbf2] text-[#22c55e]"
+                      }`}
+                    >
+                      {product.status === "EXPIRY_SOON" ? "마감임박" : "판매중"}
+                    </span>
+                  </div>
+                  <div className="mt-3 text-[14px] leading-6 text-text-secondary">
+                    유통기한 {formatDate(product.expiryDate)} ·{" "}
+                    {formatCurrency(product.currentPrice)} · 재고 {product.stock}개
+                  </div>
+                </div>
+                <div className="h-px bg-border" />
+                <div className="flex items-center gap-5 text-[15px] font-semibold">
+                  <button
+                    type="button"
+                    className="text-brand-secondary"
+                    onClick={() => beginEdit(product)}
                   >
-                    {product.status === "EXPIRY_SOON" ? "마감임박" : "판매중"}
-                  </span>
-                </div>
-                <div className="mt-3 text-[14px] leading-6 text-text-secondary">
-                  유통기한 {formatDate(product.expiryDate)} ·{" "}
-                  {formatCurrency(product.currentPrice)} · 재고 {product.stock}개
+                    수정
+                  </button>
+                  <button
+                    type="button"
+                    className="text-[#ff5d5d]"
+                    onClick={() => setDeleting(product)}
+                  >
+                    삭제
+                  </button>
                 </div>
               </div>
-              <div className="h-px bg-border" />
-              <div className="flex items-center gap-5 text-[15px] font-semibold">
-                <button
-                  type="button"
-                  className="text-brand-secondary"
-                  onClick={() => beginEdit(product)}
-                >
-                  수정
-                </button>
-                <button
-                  type="button"
-                  className="text-[#ff5d5d]"
-                  onClick={() => setDeleting(product)}
-                >
-                  삭제
-                </button>
-              </div>
-            </div>
-          </Card>
-        ))}
+            </Card>
+          ))
+        ) : (
+          <EmptyState
+            title="등록된 상품이 없습니다"
+            description="새 상품을 등록하면 판매 현황과 재고를 여기서 바로 관리할 수 있어요."
+            actionHref="/seller/products/new"
+            actionLabel="상품 등록하기"
+          />
+        )}
       </section>
 
       {editing ? (

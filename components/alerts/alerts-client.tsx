@@ -154,13 +154,19 @@ export function AlertsClient({
           <div className="h-px flex-1 bg-border" />
         </div>
         <div className="space-y-3">
-          {todayDeals.map((item) => (
-            <AlertRow
-              key={`${item.product.id}-${item.alertId ?? "today"}`}
-              item={item}
-              onToggle={handleToggle}
-            />
-          ))}
+          {todayDeals.length ? (
+            todayDeals.map((item) => (
+              <AlertRow
+                key={`${item.product.id}-${item.alertId ?? "today"}`}
+                item={item}
+                onToggle={handleToggle}
+              />
+            ))
+          ) : (
+            <Card className="p-5 text-[13px] text-text-secondary">
+              오늘 마감 예정인 특가 알림이 아직 없습니다.
+            </Card>
+          )}
         </div>
       </section>
 
