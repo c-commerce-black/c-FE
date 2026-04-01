@@ -1,0 +1,76 @@
+<svg width="1536" height="1024" viewBox="0 0 1536 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="183" y1="109" x2="1329" y2="925" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF4E0"/>
+      <stop offset="0.52" stop-color="#FFD9C7"/>
+      <stop offset="1" stop-color="#FFC6D3"/>
+    </linearGradient>
+    <linearGradient id="cup" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#FF6B57"/>
+      <stop offset="1" stop-color="#D93C42"/>
+    </linearGradient>
+    <linearGradient id="lid" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#FFF8EA"/>
+      <stop offset="1" stop-color="#FFDFA9"/>
+    </linearGradient>
+    <linearGradient id="noodle" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#FFE67D"/>
+      <stop offset="1" stop-color="#FFB800"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#FFB957"/>
+      <stop offset="1" stop-color="#FF7A00"/>
+    </linearGradient>
+    <filter id="blur" x="-120" y="-120" width="1776" height="1264" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="34"/>
+    </filter>
+    <filter id="shadow" x="327" y="238" width="889" height="650" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feOffset dy="26"/>
+      <feGaussianBlur stdDeviation="30"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.317647 0 0 0 0 0.133333 0 0 0 0 0.145098 0 0 0 0.15 0"/>
+    </filter>
+  </defs>
+  <rect width="1536" height="1024" rx="64" fill="url(#bg)"/>
+  <g filter="url(#blur)" opacity="0.9">
+    <circle cx="325" cy="285" r="238" fill="#FFF0AA"/>
+    <circle cx="1196" cy="272" r="248" fill="#FFD0E1"/>
+    <circle cx="1010" cy="792" r="234" fill="#FFB86E" fill-opacity="0.34"/>
+  </g>
+  <ellipse cx="781" cy="838" rx="332" ry="74" fill="#E57E78" opacity="0.22"/>
+  <g filter="url(#shadow)">
+    <path d="M551 331C567.818 307.949 594.635 294 623.167 294H919.833C948.365 294 975.182 307.949 992 331L1078.19 449.111C1088.38 463.071 1094 479.905 1094 497.191V633C1094 697.065 1042.07 749 978 749H565C500.935 749 449 697.065 449 633V497.191C449 479.905 454.62 463.071 464.807 449.111L551 331Z" fill="url(#cup)"/>
+    <path d="M601 288C601 264.252 620.252 245 644 245H899C922.748 245 942 264.252 942 288V334H601V288Z" fill="url(#lid)"/>
+    <ellipse cx="771.5" cy="334" rx="170.5" ry="48" fill="#FFF2C6"/>
+    <path d="M614 293C692 318 848 319 929 293" stroke="#FFC45F" stroke-width="16" stroke-linecap="round"/>
+  </g>
+  <g stroke="url(#noodle)" stroke-width="16" stroke-linecap="round">
+    <path d="M650 367C653 389 643 413 619 429C665 450 675 492 649 524"/>
+    <path d="M704 364C693 392 701 421 728 437C680 468 685 504 712 531"/>
+    <path d="M759 359C774 392 770 422 748 443C788 470 796 508 770 536"/>
+    <path d="M815 359C803 388 808 415 833 438C782 462 782 505 806 532"/>
+    <path d="M875 367C886 393 881 421 860 439C895 463 904 498 889 528"/>
+    <path d="M930 373C921 401 929 425 952 441C924 466 916 503 934 534"/>
+  </g>
+  <g>
+    <circle cx="637" cy="621" r="40" fill="#FFF4C4"/>
+    <circle cx="706" cy="574" r="30" fill="#7AC77E"/>
+    <ellipse cx="855" cy="592" rx="44" ry="24" fill="#2E8B57"/>
+    <circle cx="936" cy="621" r="35" fill="#FFE4A5"/>
+    <circle cx="845" cy="666" r="28" fill="#FFB35D"/>
+    <circle cx="740" cy="659" r="24" fill="#FFEBBF"/>
+  </g>
+  <g>
+    <path d="M1102 360L1218 295" stroke="#8B5E3C" stroke-width="18" stroke-linecap="round"/>
+    <path d="M1102 402L1226 332" stroke="#A96B44" stroke-width="18" stroke-linecap="round"/>
+    <path d="M1092 382L1198 545" stroke="#6B4226" stroke-width="22" stroke-linecap="round"/>
+    <path d="M1131 356L1235 516" stroke="#7A4F30" stroke-width="22" stroke-linecap="round"/>
+  </g>
+  <g opacity="0.84">
+    <circle cx="1172" cy="419" r="18" fill="white"/>
+    <circle cx="1227" cy="468" r="12" fill="white"/>
+    <circle cx="371" cy="369" r="16" fill="white"/>
+    <circle cx="332" cy="441" r="10" fill="white"/>
+  </g>
+  <path d="M516 748C572 705 639 699 717 730" stroke="#FFDCA7" stroke-width="12" stroke-linecap="round" opacity="0.8"/>
+  <path d="M814 731C873 709 936 710 1005 745" stroke="#FFDCA7" stroke-width="12" stroke-linecap="round" opacity="0.8"/>
+</svg>

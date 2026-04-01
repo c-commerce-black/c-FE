@@ -130,6 +130,15 @@ select {
   animation: cc-in 0.24s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+.cc-scrollbar-hidden {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.cc-scrollbar-hidden::-webkit-scrollbar {
+  display: none;
+}
+
 @keyframes cc-in {
   from {
     opacity: 0;

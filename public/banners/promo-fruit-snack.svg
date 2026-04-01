@@ -1,0 +1,96 @@
+<svg width="1536" height="1024" viewBox="0 0 1536 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="154" y1="136" x2="1355" y2="915" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#EDFDF7"/>
+      <stop offset="0.47" stop-color="#DDF7FF"/>
+      <stop offset="1" stop-color="#FFE5F3"/>
+    </linearGradient>
+    <linearGradient id="tray" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#FFFDF8"/>
+      <stop offset="1" stop-color="#E8F7FF"/>
+    </linearGradient>
+    <linearGradient id="blueberry" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#7489FF"/>
+      <stop offset="1" stop-color="#3540B7"/>
+    </linearGradient>
+    <linearGradient id="kiwiSkin" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#AF7A47"/>
+      <stop offset="1" stop-color="#764722"/>
+    </linearGradient>
+    <linearGradient id="kiwiFlesh" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#B8FF7A"/>
+      <stop offset="1" stop-color="#58B83F"/>
+    </linearGradient>
+    <linearGradient id="orangeSkin" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#FFD16D"/>
+      <stop offset="1" stop-color="#FF8E2B"/>
+    </linearGradient>
+    <filter id="blur" x="-120" y="-120" width="1776" height="1264" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="34"/>
+    </filter>
+    <filter id="shadow" x="253" y="245" width="1009" height="662" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feOffset dy="22"/>
+      <feGaussianBlur stdDeviation="28"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.196078 0 0 0 0 0.317647 0 0 0 0 0.372549 0 0 0 0.12 0"/>
+    </filter>
+  </defs>
+  <rect width="1536" height="1024" rx="64" fill="url(#bg)"/>
+  <g filter="url(#blur)" opacity="0.9">
+    <circle cx="1156" cy="244" r="264" fill="#FFF3A7"/>
+    <circle cx="334" cy="736" r="252" fill="#A1F0FF"/>
+    <circle cx="1121" cy="768" r="228" fill="#FFC2D9"/>
+  </g>
+  <ellipse cx="782" cy="832" rx="392" ry="80" fill="#90C7DB" opacity="0.22"/>
+  <g filter="url(#shadow)">
+    <rect x="337" y="303" width="841" height="484" rx="84" fill="url(#tray)"/>
+  </g>
+  <g>
+    <circle cx="998" cy="467" r="136" fill="url(#orangeSkin)"/>
+    <circle cx="998" cy="467" r="113" fill="#FFF2CC"/>
+    <path d="M998 354V580" stroke="#FFD782" stroke-width="16" stroke-linecap="round"/>
+    <path d="M885 467H1111" stroke="#FFD782" stroke-width="16" stroke-linecap="round"/>
+    <path d="M919 389L1078 546" stroke="#FFD782" stroke-width="16" stroke-linecap="round"/>
+    <path d="M919 546L1078 389" stroke="#FFD782" stroke-width="16" stroke-linecap="round"/>
+  </g>
+  <g>
+    <circle cx="661" cy="540" r="114" fill="url(#kiwiSkin)"/>
+    <circle cx="661" cy="540" r="88" fill="url(#kiwiFlesh)"/>
+    <circle cx="661" cy="540" r="18" fill="#FFF2D5"/>
+    <g fill="#2D3321">
+      <ellipse cx="661" cy="480" rx="7" ry="15"/>
+      <ellipse cx="706" cy="496" rx="7" ry="15" transform="rotate(35 706 496)"/>
+      <ellipse cx="723" cy="540" rx="7" ry="15" transform="rotate(90 723 540)"/>
+      <ellipse cx="706" cy="585" rx="7" ry="15" transform="rotate(145 706 585)"/>
+      <ellipse cx="661" cy="603" rx="7" ry="15" transform="rotate(180 661 603)"/>
+      <ellipse cx="614" cy="585" rx="7" ry="15" transform="rotate(-145 614 585)"/>
+      <ellipse cx="598" cy="540" rx="7" ry="15" transform="rotate(-90 598 540)"/>
+      <ellipse cx="614" cy="496" rx="7" ry="15" transform="rotate(-35 614 496)"/>
+    </g>
+  </g>
+  <g fill="url(#blueberry)">
+    <circle cx="522" cy="659" r="41"/>
+    <circle cx="583" cy="620" r="36"/>
+    <circle cx="629" cy="674" r="40"/>
+    <circle cx="705" cy="663" r="35"/>
+    <circle cx="766" cy="621" r="39"/>
+    <circle cx="819" cy="678" r="37"/>
+    <circle cx="911" cy="645" r="42"/>
+    <circle cx="977" cy="694" r="39"/>
+  </g>
+  <g fill="#A7B8FF">
+    <circle cx="522" cy="648" r="11"/>
+    <circle cx="584" cy="610" r="10"/>
+    <circle cx="632" cy="662" r="10"/>
+    <circle cx="704" cy="651" r="10"/>
+    <circle cx="767" cy="610" r="10"/>
+    <circle cx="820" cy="667" r="10"/>
+    <circle cx="912" cy="634" r="11"/>
+    <circle cx="978" cy="683" r="10"/>
+  </g>
+  <g opacity="0.84">
+    <circle cx="1212" cy="420" r="18" fill="white"/>
+    <circle cx="305" cy="382" r="16" fill="white"/>
+    <circle cx="359" cy="463" r="10" fill="white"/>
+    <circle cx="1124" cy="342" r="8" fill="white"/>
+  </g>
+</svg>

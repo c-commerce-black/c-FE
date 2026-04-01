@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, Search } from "lucide-react";
 
-import { HomeHero } from "@/components/catalog";
-import { ProductCard } from "@/components/catalog";
+import { HomeHero, HomePromoCarousel, ProductCard } from "@/components/catalog";
 import { Card } from "@/components/shared/ui";
 import { CATEGORY_LABELS, getRemainSeconds } from "@/lib/catalog";
 import { getProducts } from "@/lib/catalog/service";
@@ -67,6 +66,8 @@ export default async function HomePage() {
           ))}
         </div>
       </section>
+
+      <HomePromoCarousel />
 
       <section className="space-y-3 pb-4">
         <Card className="p-5">
