@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/shared/ui";
 import { Card } from "@/components/shared/ui";
 import { Input } from "@/components/shared/ui";
+import { Textarea } from "@/components/shared/ui";
 import { getApiErrorMessage, requestApi } from "@/lib/shared/api";
 import { CATEGORY_LABELS } from "@/lib/catalog";
 
@@ -118,6 +119,13 @@ export function SellerProductForm() {
           onChange={(event) => updateField("expiryDate", event.target.value)}
           className="border-brand-secondary bg-white"
         />
+        <Textarea
+          label="상품 설명"
+          placeholder="상품 상태, 보관 방법, 유통기한 특이사항 등을 적어 주세요."
+          value={values.description}
+          onChange={(event) => updateField("description", event.target.value)}
+          hint="상세 페이지와 주문 화면에 함께 노출됩니다."
+        />
 
         <label className="flex min-h-40 cursor-pointer flex-col items-center justify-center rounded-[18px] border border-dashed border-border-strong bg-white px-6 text-center">
           {filePreview ? (
@@ -135,7 +143,9 @@ export function SellerProductForm() {
               <p className="mt-4 text-[18px] font-black tracking-[-0.04em] text-foreground">
                 이미지 업로드
               </p>
-              <p className="mt-1 text-[13px] text-text-secondary">JPG, PNG · 최대 10MB</p>
+              <p className="mt-1 text-[13px] text-text-secondary">
+                JPG, PNG · 최대 10MB
+              </p>
             </>
           )}
           <input
@@ -148,6 +158,9 @@ export function SellerProductForm() {
               setFilePreview(URL.createObjectURL(file));
             }}
           />
+          <span className="mt-3 text-[12px] text-text-secondary">
+            업로드 API 연동 전까지는 미리보기만 지원됩니다.
+          </span>
         </label>
       </section>
 
