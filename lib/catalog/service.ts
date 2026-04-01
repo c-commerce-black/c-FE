@@ -1,6 +1,7 @@
 import { cache } from "react";
 
-import { backendApi, unwrapApiResponse } from "@/lib/shared/api";
+import { unwrapApiResponse } from "@/lib/shared/api";
+import { backendApi } from "@/lib/shared/api/backend";
 
 import { MOCK_PRODUCT_DETAILS, MOCK_PRODUCTS } from "./mock-data";
 import { normalizeProductFeedPage } from "./helpers";

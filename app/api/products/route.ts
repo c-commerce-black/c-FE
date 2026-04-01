@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { getProducts } from "@/lib/catalog";
 import type { ProductListData, ProductStatus } from "@/lib/catalog";
+import { getProducts } from "@/lib/catalog/service";
 import type { ApiResponse } from "@/lib/shared/types";
 
 export async function GET(request: NextRequest) {

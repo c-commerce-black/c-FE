@@ -1,6 +1,5 @@
 import axios, { type AxiosInstance, type AxiosRequestConfig } from "axios";
 
-import { env } from "@/lib/shared/env";
 import { logUnexpectedApiResponse, resolveApiResponse } from "./response";
 
 type Primitive = string | number | boolean;
@@ -95,9 +94,5 @@ export function createApiInstance(
 
   return instance;
 }
-
-export const backendApi = createApiInstance({
-  baseURL: env.apiBaseUrl,
-});
 
 export const appApi = createApiInstance();

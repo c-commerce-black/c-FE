@@ -2,7 +2,7 @@ import { CartClient } from "@/components/cart";
 import { EmptyState } from "@/components/shared/ui";
 import { PageFallbackNotice } from "@/components/shared/ui";
 import { getSessionToken, requireUser } from "@/lib/auth/server";
-import { getCart } from "@/lib/cart";
+import { getCart } from "@/lib/cart/service";
 import { createPageLoadState, type PageLoadState } from "@/lib/shared/types";
 
 async function getCartPageData(token: string): Promise<{

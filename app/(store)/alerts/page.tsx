@@ -1,7 +1,7 @@
 import { AlertsClient } from "@/components/alerts";
 import { PageFallbackNotice } from "@/components/shared/ui";
 import { requireUser, getSessionToken } from "@/lib/auth/server";
-import { getAlerts } from "@/lib/alerts";
+import { getAlerts } from "@/lib/alerts/service";
 import { createPageLoadState, type PageLoadState } from "@/lib/shared/types";
 
 async function getAlertsPageData(token: string): Promise<{

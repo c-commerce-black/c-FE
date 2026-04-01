@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 
-import { backendApi, resolveApiResponseFromAxios } from "@/lib/shared/api";
+import { resolveApiResponseFromAxios } from "@/lib/shared/api";
+import { backendApi } from "@/lib/shared/api/backend";
 import { createSessionAuthResponse } from "@/lib/auth/server";
 import { jsonError } from "@/lib/shared/api/server";
 

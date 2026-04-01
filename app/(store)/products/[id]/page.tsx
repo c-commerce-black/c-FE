@@ -6,9 +6,9 @@ import { PriceHistoryChart } from "@/components/catalog";
 import { ProductDetailActions } from "@/components/catalog";
 import {
   CATEGORY_LABELS,
-  getProductDetail,
   getRemainSeconds,
 } from "@/lib/catalog";
+import { getProductDetail } from "@/lib/catalog/service";
 import { formatCurrency, serializeJson } from "@/lib/shared/utils";
 
 const getProduct = cache(async (id: string) => {

@@ -6,8 +6,8 @@ import {
   CATEGORY_LABELS,
   createExploreFilters,
   EXPLORE_PAGE_SIZE,
-  getProductFeedPage,
 } from "@/lib/catalog";
+import { getProductFeedPage } from "@/lib/catalog/service";
 import { buildQueryString } from "@/lib/shared/utils";
 
 type SearchParams = Promise<{

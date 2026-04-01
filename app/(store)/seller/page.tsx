@@ -1,7 +1,7 @@
 import { SellerDashboardClient } from "@/components/seller";
 import { PageFallbackNotice } from "@/components/shared/ui";
 import { getSessionToken, requireUser } from "@/lib/auth/server";
-import { getSellerProducts } from "@/lib/seller";
+import { getSellerProducts } from "@/lib/seller/service";
 import { createPageLoadState, type PageLoadState } from "@/lib/shared/types";
 
 async function getSellerPageData(token: string): Promise<{

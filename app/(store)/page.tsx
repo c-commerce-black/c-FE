@@ -4,7 +4,8 @@ import { ArrowRight, Search } from "lucide-react";
 import { HomeHero } from "@/components/catalog";
 import { ProductCard } from "@/components/catalog";
 import { Card } from "@/components/shared/ui";
-import { CATEGORY_LABELS, getProducts, getRemainSeconds } from "@/lib/catalog";
+import { CATEGORY_LABELS, getRemainSeconds } from "@/lib/catalog";
+import { getProducts } from "@/lib/catalog/service";
 
 export default async function HomePage() {
   const { products } = await getProducts({

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { getProductFeedPage, type ProductFeedPage } from "@/lib/catalog";
+import type { ProductFeedPage } from "@/lib/catalog";
+import { getProductFeedPage } from "@/lib/catalog/service";
 import type { ApiResponse } from "@/lib/shared/types";
 
 export async function GET(request: NextRequest) {

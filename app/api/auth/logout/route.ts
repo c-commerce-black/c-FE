@@ -1,5 +1,6 @@
 import { SESSION_COOKIE_NAME } from "@/lib/auth";
-import { backendApi, resolveApiResponseFromAxios } from "@/lib/shared/api";
+import { resolveApiResponseFromAxios } from "@/lib/shared/api";
+import { backendApi } from "@/lib/shared/api/backend";
 import {
   getSessionTokenFromCookies,
   jsonApiResponse,

@@ -6,7 +6,7 @@ import { Badge } from "@/components/shared/ui";
 import { Card } from "@/components/shared/ui";
 import { PageFallbackNotice } from "@/components/shared/ui";
 import { getSessionToken, requireUser } from "@/lib/auth/server";
-import { getOrder } from "@/lib/orders";
+import { getOrder } from "@/lib/orders/service";
 import { createPageLoadState, type PageLoadState } from "@/lib/shared/types";
 import { formatCurrency } from "@/lib/shared/utils";
 

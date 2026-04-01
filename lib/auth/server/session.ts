@@ -3,7 +3,8 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { SESSION_COOKIE_NAME, type User } from "@/lib/auth";
-import { backendApi, unwrapApiResponse } from "@/lib/shared/api";
+import { unwrapApiResponse } from "@/lib/shared/api";
+import { backendApi } from "@/lib/shared/api/backend";
 import { isProduction } from "@/lib/shared/env";
 
 export function getSessionCookieOptions(maxAge = 60 * 60 * 24 * 7) {

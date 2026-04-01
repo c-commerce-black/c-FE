@@ -6,8 +6,8 @@ import { Card } from "@/components/shared/ui";
 import { EmptyState } from "@/components/shared/ui";
 import { PageFallbackNotice } from "@/components/shared/ui";
 import { getSessionToken, requireUser } from "@/lib/auth/server";
-import { getOrders } from "@/lib/orders";
 import { ORDER_STATUS_LABELS } from "@/lib/orders";
+import { getOrders } from "@/lib/orders/service";
 import { createPageLoadState, type PageLoadState } from "@/lib/shared/types";
 import { formatCurrency, formatDate } from "@/lib/shared/utils";
 

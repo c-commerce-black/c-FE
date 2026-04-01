@@ -1,4 +1,5 @@
-import { backendApi, unwrapApiResponse } from "@/lib/shared/api";
+import { unwrapApiResponse } from "@/lib/shared/api";
+import { backendApi } from "@/lib/shared/api/backend";
 
 import type { CartState } from "./types";
 

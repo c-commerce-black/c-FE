@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { backendApi, resolveApiResponseFromAxios } from "@/lib/shared/api";
+import { backendApi } from "@/lib/shared/api/backend";
+import { resolveApiResponseFromAxios } from "@/lib/shared/api";
 import type { ApiResponse } from "@/lib/shared/types";
 
 import { getSessionTokenFromCookies } from "./cookies";
