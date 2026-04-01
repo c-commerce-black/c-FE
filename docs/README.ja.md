@@ -62,7 +62,6 @@ cp .env.example .env.local
 
 ```env
 API_BASE_URL=http://localhost:8080
-SESSION_COOKIE_NAME=cc_access_token
 ```
 
 ## はじめ方

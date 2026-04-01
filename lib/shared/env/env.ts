@@ -49,5 +49,4 @@ function readSiteUrl() {
 export const env = {
   apiBaseUrl: readUrlEnv("API_BASE_URL"),
   siteUrl: readSiteUrl(),
-  sessionCookieName: process.env.SESSION_COOKIE_NAME ?? "cc_access_token",
 } as const;

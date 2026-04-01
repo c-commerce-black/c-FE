@@ -2,13 +2,13 @@ import { cache } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-import type { User } from "@/lib/auth";
+import { SESSION_COOKIE_NAME, type User } from "@/lib/auth";
 import { fetchBackend } from "@/lib/shared/api";
-import { env, isProduction } from "@/lib/shared/env";
+import { isProduction } from "@/lib/shared/env";
 
 export function getSessionCookieOptions(maxAge = 60 * 60 * 24 * 7) {
   return {
-    name: env.sessionCookieName,
+    name: SESSION_COOKIE_NAME,
     httpOnly: true,
     sameSite: "lax" as const,
     secure: isProduction,
@@ -19,7 +19,7 @@ export function getSessionCookieOptions(maxAge = 60 * 60 * 24 * 7) {
 
 export const getSessionToken = cache(async () => {
   const cookieStore = await cookies();
-  return cookieStore.get(env.sessionCookieName)?.value ?? null;
+  return cookieStore.get(SESSION_COOKIE_NAME)?.value ?? null;
 });
 
 export async function getMe(token: string) {

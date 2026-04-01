@@ -1,8 +1,8 @@
 import { cookies } from "next/headers";
 
-import { env } from "@/lib/shared/env";
+import { SESSION_COOKIE_NAME } from "@/lib/auth";
 
 export async function getSessionTokenFromCookies() {
   const cookieStore = await cookies();
-  return cookieStore.get(env.sessionCookieName)?.value ?? null;
+  return cookieStore.get(SESSION_COOKIE_NAME)?.value ?? null;
 }

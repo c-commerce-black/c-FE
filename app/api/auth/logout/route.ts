@@ -1,5 +1,5 @@
+import { SESSION_COOKIE_NAME } from "@/lib/auth";
 import { requestBackend } from "@/lib/shared/api";
-import { env } from "@/lib/shared/env";
 import {
   getSessionTokenFromCookies,
   jsonApiResponse,
@@ -27,7 +27,7 @@ export async function POST() {
       payload,
       fallbackMessage: "로그아웃에 실패했습니다.",
     });
-    response.cookies.delete(env.sessionCookieName);
+    response.cookies.delete(SESSION_COOKIE_NAME);
     return response;
   } catch {
     return jsonError("로그아웃 요청을 처리할 수 없습니다.");
