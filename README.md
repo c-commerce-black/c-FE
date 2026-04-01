@@ -62,7 +62,6 @@ Recommended variables for development, required for deployed environments:
 
 ```env
 API_BASE_URL=http://localhost:8080
-NEXT_PUBLIC_SITE_URL=http://localhost:3000
 SESSION_COOKIE_NAME=cc_access_token
 ```
 
