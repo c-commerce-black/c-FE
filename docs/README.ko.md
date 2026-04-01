@@ -71,13 +71,14 @@ SESSION_COOKIE_NAME=cc_access_token
 의존성 설치:
 
 ```bash
-npm install
+corepack enable
+pnpm install
 ```
 
 개발 서버 실행:
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 [http://localhost:3000](http://localhost:3000)에서 확인할 수 있습니다.
@@ -85,18 +86,18 @@ npm run dev
 ## 스크립트
 
 ```bash
-npm run dev         # Next.js 개발 서버 실행
-npm run build       # 프로덕션 빌드
-npm run start       # 프로덕션 서버 실행
-npm run lint        # ESLint 실행
-npm run test        # Vitest 단위 테스트 실행
-npm run test:e2e    # Playwright E2E 테스트 실행
+pnpm dev         # Next.js 개발 서버 실행
+pnpm build       # 프로덕션 빌드
+pnpm start       # 프로덕션 서버 실행
+pnpm lint        # ESLint 실행
+pnpm test        # Vitest 단위 테스트 실행
+pnpm test:e2e    # Playwright E2E 테스트 실행
 ```
 
 개발 중 webpack 기반 빌드 검증이 필요하면:
 
 ```bash
-npm run build -- --webpack
+pnpm build -- --webpack
 ```
 
 ## 테스트
@@ -104,14 +105,16 @@ npm run build -- --webpack
 단위 테스트는 유틸리티, 인증/세션 헬퍼, 커머스 데이터 동작을 검증합니다.
 
 ```bash
-npm run test
+pnpm test
 ```
 
 E2E 테스트는 공개 네비게이션, 탐색 필터 동작, 시각 검토 스냅샷을 검증합니다.
 
 ```bash
-npx playwright test
+pnpm exec playwright test
 ```
+
+이 저장소의 표준 패키지 매니저는 `pnpm`입니다. `npm`과 `pnpm` 락파일을 혼용하지 않습니다.
 
 ## 프로젝트 메모
 

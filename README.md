@@ -71,13 +71,14 @@ SESSION_COOKIE_NAME=cc_access_token
 Install dependencies:
 
 ```bash
-npm install
+corepack enable
+pnpm install
 ```
 
 Start the development server:
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
@@ -85,18 +86,18 @@ Open [http://localhost:3000](http://localhost:3000).
 ## Scripts
 
 ```bash
-npm run dev         # start the Next.js dev server
-npm run build       # production build
-npm run start       # start the production server
-npm run lint        # run ESLint
-npm run test        # run unit tests with Vitest
-npm run test:e2e    # run Playwright end-to-end tests
+pnpm dev         # start the Next.js dev server
+pnpm build       # production build
+pnpm start       # start the production server
+pnpm lint        # run ESLint
+pnpm test        # run unit tests with Vitest
+pnpm test:e2e    # run Playwright end-to-end tests
 ```
 
 For webpack-based build verification used during development:
 
 ```bash
-npm run build -- --webpack
+pnpm build -- --webpack
 ```
 
 ## Testing
@@ -104,14 +105,16 @@ npm run build -- --webpack
 Unit tests cover utilities, auth/session helpers, and commerce data behavior.
 
 ```bash
-npm run test
+pnpm test
 ```
 
 End-to-end tests cover public navigation, explore filtering behavior, and visual review snapshots.
 
 ```bash
-npx playwright test
+pnpm exec playwright test
 ```
+
+Use `pnpm` as the standard package manager for this repository. Avoid mixing `npm` and `pnpm` lockfiles.
 
 ## Project Notes
 

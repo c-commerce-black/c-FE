@@ -71,13 +71,14 @@ SESSION_COOKIE_NAME=cc_access_token
 依存関係のインストール:
 
 ```bash
-npm install
+corepack enable
+pnpm install
 ```
 
 開発サーバーの起動:
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 [http://localhost:3000](http://localhost:3000) を開いて確認します。
@@ -85,18 +86,18 @@ npm run dev
 ## スクリプト
 
 ```bash
-npm run dev         # Next.js 開発サーバーを起動
-npm run build       # 本番ビルド
-npm run start       # 本番サーバーを起動
-npm run lint        # ESLint を実行
-npm run test        # Vitest のユニットテストを実行
-npm run test:e2e    # Playwright の E2E テストを実行
+pnpm dev         # Next.js 開発サーバーを起動
+pnpm build       # 本番ビルド
+pnpm start       # 本番サーバーを起動
+pnpm lint        # ESLint を実行
+pnpm test        # Vitest のユニットテストを実行
+pnpm test:e2e    # Playwright の E2E テストを実行
 ```
 
 開発中に webpack ベースでビルド確認する場合:
 
 ```bash
-npm run build -- --webpack
+pnpm build -- --webpack
 ```
 
 ## テスト
@@ -104,14 +105,16 @@ npm run build -- --webpack
 ユニットテストでは、ユーティリティ、認証 / セッションヘルパー、コマースデータの挙動を確認します。
 
 ```bash
-npm run test
+pnpm test
 ```
 
 E2E テストでは、公開ナビゲーション、探索フィルター動作、ビジュアルレビュースナップショットを確認します。
 
 ```bash
-npx playwright test
+pnpm exec playwright test
 ```
+
+このリポジトリの標準パッケージマネージャーは `pnpm` です。`npm` と `pnpm` の lockfile は混在させません。
 
 ## プロジェクトメモ
 
