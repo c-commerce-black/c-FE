@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { SESSION_COOKIE_NAME, type User } from "@/lib/auth";
-import { fetchBackend } from "@/lib/shared/api";
+import { backendApi, unwrapApiResponse } from "@/lib/shared/api";
 import { isProduction } from "@/lib/shared/env";
 
 export function getSessionCookieOptions(maxAge = 60 * 60 * 24 * 7) {
@@ -23,7 +23,11 @@ export const getSessionToken = cache(async () => {
 });
 
 export async function getMe(token: string) {
-  return fetchBackend<{ user: User }>("/api/auth/me", { token });
+  const response = await backendApi.get("/api/auth/me", { token });
+  return unwrapApiResponse<{ user: User }>(
+    response,
+    "사용자 정보를 불러오지 못했습니다.",
+  );
 }
 
 export const getCurrentUser = cache(async () => {

@@ -3,14 +3,15 @@
 import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 
 import { ProductCard } from "@/components/catalog";
+import { EmptyState } from "@/components/shared/ui";
 import { Card } from "@/components/shared/ui";
-import { getApiErrorMessage, requestApi } from "@/lib/shared/api";
+import { getApiErrorMessage } from "@/lib/shared/api";
 import {
   createExploreFilters,
-  EXPLORE_PAGE_SIZE,
   type ExploreFilters,
   type Product,
 } from "@/lib/catalog";
+import { useExploreFeedPageMutation } from "@/hooks/api";
 import { useExploreFeedStore } from "@/stores/explore-feed-store";
 
 function sameFilters(left: ExploreFilters, right: ExploreFilters) {
@@ -56,6 +57,7 @@ export function ExploreFeed({
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const restoredRef = useRef(false);
   const filtersRef = useRef(filters);
+  const loadMoreMutation = useExploreFeedPageMutation();
 
   const store = useExploreFeedStore();
   const {
@@ -82,6 +84,7 @@ export function ExploreFeed({
   const currentPage = usesStoredFeed ? page : initialPage;
   const currentError = hydrated ? error : null;
   const currentLoading = hydrated ? isLoading : false;
+  const isEmpty = visibleItems.length === 0 && !currentLoading && !currentError;
 
   useEffect(() => {
     filtersRef.current = normalizedFilters;
@@ -161,39 +164,19 @@ export function ExploreFeed({
     setError(null);
 
     try {
-      const search = new URLSearchParams({
-        page: String(currentPage + 1),
-        limit: String(EXPLORE_PAGE_SIZE),
-        sort: filtersRef.current.sort,
+      const data = await loadMoreMutation.mutateAsync({
+        page: currentPage + 1,
+        filters: filtersRef.current,
       });
-
-      if (filtersRef.current.category) search.set("category", filtersRef.current.category);
-      if (filtersRef.current.q) search.set("q", filtersRef.current.q);
-
-      const { ok, payload } = await requestApi<{ items: Product[]; nextPage: number | null; hasMore: boolean; total: number }>(
-        `/api/products/feed?${search.toString()}`,
-        {
-          cache: "no-store",
-        },
-        "상품을 더 불러오지 못했습니다.",
-      );
-
-      if (!ok || !payload.success) {
-        throw new Error(getApiErrorMessage(payload, "상품을 더 불러오지 못했습니다."));
-      }
 
       appendFeed({
-        items: payload.data.items,
-        page: payload.data.nextPage ? payload.data.nextPage - 1 : currentPage + 1,
-        hasMore: payload.data.hasMore,
-        total: payload.data.total,
+        items: data.items,
+        page: data.nextPage ? data.nextPage - 1 : currentPage + 1,
+        hasMore: data.hasMore,
+        total: data.total,
       });
     } catch (loadError) {
-      setError(
-        loadError instanceof Error
-          ? loadError.message
-          : "상품을 더 불러오지 못했습니다.",
-      );
+      setError(getApiErrorMessage(loadError, "상품을 더 불러오지 못했습니다."));
     }
   }, [
     appendFeed,
@@ -203,6 +186,7 @@ export function ExploreFeed({
     setError,
     setLoading,
     visibleHasMore,
+    loadMoreMutation,
   ]);
 
   useEffect(() => {
@@ -223,16 +207,27 @@ export function ExploreFeed({
 
   return (
     <section className="space-y-3">
-      <div className="space-y-3">
-        {visibleItems.map((product) => (
-          <ProductCard key={product.id} product={product} />
-        ))}
-        {currentLoading
-          ? Array.from({ length: 2 }).map((_, index) => (
-              <FeedSkeleton key={`skeleton-${index}`} />
-            ))
-          : null}
-      </div>
+      {isEmpty ? (
+        <div className="flex min-h-[44vh] items-center justify-center">
+          <div className="w-full max-w-md">
+            <EmptyState
+              title="표시할 상품이 아직 없어요"
+              description="선택한 조건에 맞는 상품을 찾지 못했습니다. 카테고리나 검색어를 바꿔 다시 확인해 주세요."
+            />
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {visibleItems.map((product) => (
+            <ProductCard key={product.id} product={product} />
+          ))}
+          {currentLoading
+            ? Array.from({ length: 2 }).map((_, index) => (
+                <FeedSkeleton key={`skeleton-${index}`} />
+              ))
+            : null}
+        </div>
+      )}
 
       {currentError ? (
         <Card className="border-warning/30 bg-warning/5 p-4">

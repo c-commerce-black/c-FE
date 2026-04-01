@@ -1,4 +1,4 @@
-import { fetchBackend } from "@/lib/shared/api";
+import { backendApi, unwrapApiResponse } from "@/lib/shared/api";
 
 import type { SellerProductsData, SellerProductsQuery } from "./types";
 
@@ -6,8 +6,12 @@ export async function getSellerProducts(
   token: string,
   query?: SellerProductsQuery,
 ) {
-  return fetchBackend<SellerProductsData>("/api/seller/products", {
+  const response = await backendApi.get("/api/seller/products", {
     token,
-    query,
+    params: query,
   });
+  return unwrapApiResponse<SellerProductsData>(
+    response,
+    "셀러 상품을 불러오지 못했습니다.",
+  );
 }

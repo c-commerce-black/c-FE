@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/shared/ui";
 import { Card } from "@/components/shared/ui";
-import { getApiErrorMessage, requestApi } from "@/lib/shared/api";
+import { getApiErrorMessage } from "@/lib/shared/api";
+import { useCancelOrderMutation, useUpdateOrderStatusMutation } from "@/hooks/api";
 import type { OrderStatus } from "@/lib/orders";
 import { ORDER_STATUS_LABELS } from "@/lib/orders";
 import { getNextSellerOrderStatus } from "@/lib/orders";
@@ -20,57 +21,40 @@ export function OrderActionPanel({
   canCancel: boolean;
 }) {
   const router = useRouter();
-  const [pending, startTransition] = useTransition();
+  const cancelOrderMutation = useCancelOrderMutation();
+  const updateOrderStatusMutation = useUpdateOrderStatusMutation();
   const [feedback, setFeedback] = useState<string | null>(null);
 
   const nextSellerStatus = getNextSellerOrderStatus(status);
 
   function handleCancel() {
-    startTransition(async () => {
-      setFeedback(null);
-      const { ok, payload } = await requestApi<{ message?: string }>(
-        `/api/orders/${orderId}/cancel`,
-        {
-          method: "PATCH",
-        },
-        "주문 취소에 실패했습니다.",
-      );
-
-      if (!ok || !payload.success) {
-        setFeedback(getApiErrorMessage(payload, "주문 취소에 실패했습니다."));
-        return;
-      }
-
-      setFeedback(payload.data.message ?? "주문이 취소되었습니다.");
-      router.refresh();
-    });
+    setFeedback(null);
+    void cancelOrderMutation
+      .mutateAsync({ orderId })
+      .then((data) => {
+        setFeedback(data.message ?? "주문이 취소되었습니다.");
+        router.refresh();
+      })
+      .catch((error) => {
+        setFeedback(getApiErrorMessage(error, "주문 취소에 실패했습니다."));
+      });
   }
 
   function handleStatusUpdate() {
     if (!nextSellerStatus) return;
 
-    startTransition(async () => {
-      setFeedback(null);
-      const { ok, payload } = await requestApi<{ order: { status: OrderStatus } }>(
-        `/api/orders/${orderId}/status`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: nextSellerStatus }),
-        },
-        "주문 상태 변경에 실패했습니다.",
-      );
-
-      if (!ok || !payload.success) {
-        setFeedback(getApiErrorMessage(payload, "주문 상태 변경에 실패했습니다."));
-        return;
-      }
-
-      setFeedback(
-        `주문 상태가 ${ORDER_STATUS_LABELS[payload.data.order.status as OrderStatus]}로 변경되었습니다.`,
-      );
-      router.refresh();
-    });
+    setFeedback(null);
+    void updateOrderStatusMutation
+      .mutateAsync({ orderId, status: nextSellerStatus })
+      .then((data) => {
+        setFeedback(
+          `주문 상태가 ${ORDER_STATUS_LABELS[data.order.status as OrderStatus]}로 변경되었습니다.`,
+        );
+        router.refresh();
+      })
+      .catch((error) => {
+        setFeedback(getApiErrorMessage(error, "주문 상태 변경에 실패했습니다."));
+      });
   }
 
   if (!canCancel && !nextSellerStatus) {
@@ -93,14 +77,18 @@ export function OrderActionPanel({
             variant="outline"
             size="lg"
             onClick={handleCancel}
-            disabled={pending}
+            disabled={cancelOrderMutation.isPending || updateOrderStatusMutation.isPending}
           >
-            {pending ? "처리 중..." : "주문 취소"}
+            {cancelOrderMutation.isPending ? "처리 중..." : "주문 취소"}
           </Button>
         ) : null}
         {nextSellerStatus ? (
-          <Button size="lg" onClick={handleStatusUpdate} disabled={pending}>
-            {pending
+          <Button
+            size="lg"
+            onClick={handleStatusUpdate}
+            disabled={cancelOrderMutation.isPending || updateOrderStatusMutation.isPending}
+          >
+            {updateOrderStatusMutation.isPending
               ? "처리 중..."
               : `${ORDER_STATUS_LABELS[nextSellerStatus]}로 변경`}
           </Button>

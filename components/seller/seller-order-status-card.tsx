@@ -1,16 +1,17 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 
 import { Button } from "@/components/shared/ui";
 import { Card } from "@/components/shared/ui";
 import { Input } from "@/components/shared/ui";
-import { getApiErrorMessage, requestApi } from "@/lib/shared/api";
+import { getApiErrorMessage } from "@/lib/shared/api";
+import { useUpdateOrderStatusMutation } from "@/hooks/api";
 import { SELLER_ORDER_STATUS_OPTIONS } from "@/lib/seller";
 import type { SellerOrderStatus } from "@/lib/orders";
 
 export function SellerOrderStatusCard() {
-  const [pending, startTransition] = useTransition();
+  const updateOrderStatusMutation = useUpdateOrderStatusMutation();
   const [orderId, setOrderId] = useState("");
   const [status, setStatus] = useState<SellerOrderStatus>("PREPARING");
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -21,25 +22,15 @@ export function SellerOrderStatusCard() {
       return;
     }
 
-    startTransition(async () => {
-      setFeedback(null);
-      const { ok, payload } = await requestApi(
-        `/api/orders/${orderId.trim()}/status`,
-        {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
-        },
-        "주문 상태 변경에 실패했습니다.",
-      );
-
-      if (!ok || !payload.success) {
-        setFeedback(getApiErrorMessage(payload, "주문 상태 변경에 실패했습니다."));
-        return;
-      }
-
-      setFeedback(`주문 ${orderId.trim()} 상태가 변경되었습니다.`);
-    });
+    setFeedback(null);
+    void updateOrderStatusMutation
+      .mutateAsync({ orderId: orderId.trim(), status })
+      .then(() => {
+        setFeedback(`주문 ${orderId.trim()} 상태가 변경되었습니다.`);
+      })
+      .catch((error) => {
+        setFeedback(getApiErrorMessage(error, "주문 상태 변경에 실패했습니다."));
+      });
   }
 
   return (
@@ -77,8 +68,13 @@ export function SellerOrderStatusCard() {
           ))}
         </select>
       </label>
-      <Button size="lg" className="w-full" onClick={submit} disabled={pending}>
-        {pending ? "변경 중..." : "주문 상태 변경"}
+      <Button
+        size="lg"
+        className="w-full"
+        onClick={submit}
+        disabled={updateOrderStatusMutation.isPending}
+      >
+        {updateOrderStatusMutation.isPending ? "변경 중..." : "주문 상태 변경"}
       </Button>
       {feedback ? <p className="text-sm text-text-secondary">{feedback}</p> : null}
     </Card>

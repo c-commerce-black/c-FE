@@ -1,14 +1,14 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/shared/ui";
 import { Input } from "@/components/shared/ui";
-import { getApiErrorMessage, requestApi } from "@/lib/shared/api";
-import type { User } from "@/lib/auth";
+import { getApiErrorMessage } from "@/lib/shared/api";
+import { useSignupMutation } from "@/hooks/api";
 import { useSignupDraftStore } from "@/stores/signup-draft-store";
 import { useAuthStore } from "@/stores/auth-store";
 
@@ -22,7 +22,7 @@ export function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const setUser = useAuthStore((state) => state.setUser);
-  const [pending, startTransition] = useTransition();
+  const signupMutation = useSignupMutation();
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -57,35 +57,25 @@ export function SignupForm() {
       setError("비밀번호 확인이 일치하지 않습니다.");
       return;
     }
-    startTransition(async () => {
-      setError(null);
-      setSuccess(null);
-      const { ok, payload } = await requestApi<{ user: User }>(
-        "/api/auth/register",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            nickname,
-            email,
-            password,
-            shopName: shopName.trim() || undefined,
-          }),
-        },
-        "회원가입에 실패했습니다.",
-      );
-
-      if (!ok || !payload.success) {
-        setError(getApiErrorMessage(payload, "회원가입에 실패했습니다."));
-        return;
-      }
-
-      setSuccess("회원가입이 완료되었습니다.");
-      setUser(payload.data.user);
-      reset();
-      router.push(next);
-      router.refresh();
-    });
+    setError(null);
+    setSuccess(null);
+    void signupMutation
+      .mutateAsync({
+        nickname,
+        email,
+        password,
+        shopName: shopName.trim() || undefined,
+      })
+      .then((data) => {
+        setSuccess("회원가입이 완료되었습니다.");
+        setUser(data.user);
+        reset();
+        router.push(next);
+        router.refresh();
+      })
+      .catch((signupError) => {
+        setError(getApiErrorMessage(signupError, "회원가입에 실패했습니다."));
+      });
   }
 
   return (
@@ -205,8 +195,13 @@ export function SignupForm() {
 
       {error ? <p className="text-sm text-urgent">{error}</p> : null}
       {success ? <p className="text-sm text-success">{success}</p> : null}
-      <Button type="submit" size="lg" className="w-full" disabled={pending}>
-        {pending ? "가입 중..." : "가입하기"}
+      <Button
+        type="submit"
+        size="lg"
+        className="w-full"
+        disabled={signupMutation.isPending}
+      >
+        {signupMutation.isPending ? "가입 중..." : "가입하기"}
       </Button>
       <p className="text-sm text-text-secondary">
         이미 계정이 있나요?{" "}

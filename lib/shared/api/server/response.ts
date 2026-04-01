@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { requestBackend } from "@/lib/shared/api";
+import { backendApi, resolveApiResponseFromAxios } from "@/lib/shared/api";
 import type { ApiResponse } from "@/lib/shared/types";
 
 import { getSessionTokenFromCookies } from "./cookies";
@@ -51,16 +51,18 @@ export async function proxyJson({
   fallbackMessage?: string;
 }) {
   const token = auth ? await getSessionTokenFromCookies() : null;
-  const { status, payload } = await requestBackend(path, {
+  const response = await backendApi.request({
+    url: path,
     method,
-    body,
+    data: body,
+    params: query,
     token,
-    query,
-    fallbackMessage,
+    validateStatus: () => true,
   });
+  const { payload } = resolveApiResponseFromAxios(response, fallbackMessage ?? "응답을 처리할 수 없습니다.");
 
   return jsonApiResponse({
-    status,
+    status: response.status,
     payload,
     fallbackMessage: "응답을 처리할 수 없습니다.",
   });

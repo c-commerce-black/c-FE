@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
@@ -8,16 +8,16 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/shared/ui";
 import { Input } from "@/components/shared/ui";
-import { getApiErrorMessage, requestApi } from "@/lib/shared/api";
+import { getApiErrorMessage } from "@/lib/shared/api";
 import { LOGO_ALT, PUBLIC_LOGO_PATH } from "@/lib/shared/branding";
-import type { User } from "@/lib/auth";
+import { useLoginMutation } from "@/hooks/api";
 import { useAuthStore } from "@/stores/auth-store";
 
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const setUser = useAuthStore((state) => state.setUser);
-  const [pending, startTransition] = useTransition();
+  const loginMutation = useLoginMutation();
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [values, setValues] = useState({
@@ -33,23 +33,17 @@ export function LoginForm() {
 
   function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    startTransition(async () => {
-      setError(null);
-      const { ok, payload } = await requestApi<{ user: User }>("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
-      }, "로그인에 실패했습니다.");
-
-      if (!ok || !payload.success) {
-        setError(getApiErrorMessage(payload, "로그인에 실패했습니다."));
-        return;
-      }
-
-      setUser(payload.data.user);
-      router.push(next);
-      router.refresh();
-    });
+    setError(null);
+    void loginMutation
+      .mutateAsync(values)
+      .then((data) => {
+        setUser(data.user);
+        router.push(next);
+        router.refresh();
+      })
+      .catch((loadError) => {
+        setError(getApiErrorMessage(loadError, "로그인에 실패했습니다."));
+      });
   }
 
   return (
@@ -99,8 +93,13 @@ export function LoginForm() {
         }
       />
       {error ? <p className="text-sm text-urgent">{error}</p> : null}
-      <Button type="submit" size="lg" className="mt-3 w-full" disabled={pending}>
-        {pending ? "로그인 중..." : "로그인"}
+      <Button
+        type="submit"
+        size="lg"
+        className="mt-3 w-full"
+        disabled={loginMutation.isPending}
+      >
+        {loginMutation.isPending ? "로그인 중..." : "로그인"}
       </Button>
       <div className="pt-2 text-center text-[14px] text-text-secondary">
         아직 계정이 없으신가요?{" "}

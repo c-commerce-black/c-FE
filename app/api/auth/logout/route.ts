@@ -1,5 +1,5 @@
 import { SESSION_COOKIE_NAME } from "@/lib/auth";
-import { requestBackend } from "@/lib/shared/api";
+import { backendApi, resolveApiResponseFromAxios } from "@/lib/shared/api";
 import {
   getSessionTokenFromCookies,
   jsonApiResponse,
@@ -14,21 +14,33 @@ export async function POST() {
       success: true,
       data: { message: "로그아웃 되었습니다." },
     } as const satisfies ApiResponse<unknown>;
-    const { status, payload } = await requestBackend("/api/auth/logout", {
-      method: "POST",
+    const response = await backendApi.post("/api/auth/logout", undefined, {
       token,
-      fallbackMessage: "로그아웃에 실패했습니다.",
-      emptyResponsePayload,
+      validateStatus: () => true,
     });
+    const { payload, reason } = resolveApiResponseFromAxios(
+      response,
+      "로그아웃에 실패했습니다.",
+    );
+    const normalizedPayload =
+      response.status === 204 &&
+      (reason === "empty-body" || reason === "empty-object")
+        ? emptyResponsePayload
+        : payload;
     const responseStatus =
-      status === 204 && payload && "success" in payload && payload.success ? 200 : status;
-    const response = jsonApiResponse({
+      response.status === 204 &&
+      normalizedPayload &&
+      "success" in normalizedPayload &&
+      normalizedPayload.success
+        ? 200
+        : response.status;
+    const jsonResponse = jsonApiResponse({
       status: responseStatus,
-      payload,
+      payload: normalizedPayload,
       fallbackMessage: "로그아웃에 실패했습니다.",
     });
-    response.cookies.delete(SESSION_COOKIE_NAME);
-    return response;
+    jsonResponse.cookies.delete(SESSION_COOKIE_NAME);
+    return jsonResponse;
   } catch {
     return jsonError("로그아웃 요청을 처리할 수 없습니다.");
   }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { X } from "lucide-react";
 
@@ -8,7 +8,11 @@ import { Button } from "@/components/shared/ui";
 import { Card } from "@/components/shared/ui";
 import { EmptyState } from "@/components/shared/ui";
 import { Input } from "@/components/shared/ui";
-import { getApiErrorMessage, requestApi } from "@/lib/shared/api";
+import { getApiErrorMessage } from "@/lib/shared/api";
+import {
+  useDeleteSellerProductMutation,
+  useUpdateSellerProductMutation,
+} from "@/hooks/api";
 import type { SellerProduct, SellerProductsData } from "@/lib/seller";
 import { formatCurrency, formatDate } from "@/lib/shared/utils";
 
@@ -21,7 +25,6 @@ export function SellerDashboardClient({
 }: {
   initialData: SellerProductsData;
 }) {
-  const [pending, startTransition] = useTransition();
   const [products, setProducts] = useState<EditableSellerProduct[]>(
     initialData.products,
   );
@@ -31,6 +34,8 @@ export function SellerDashboardClient({
   const [draft, setDraft] = useState<Record<string, string>>({});
   const [deleting, setDeleting] = useState<EditableSellerProduct | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const updateProductMutation = useUpdateSellerProductMutation();
+  const deleteProductMutation = useDeleteSellerProductMutation();
 
   const statCards = useMemo(
     () => [
@@ -53,67 +58,54 @@ export function SellerDashboardClient({
 
   function submitEdit() {
     if (!editing) return;
-    startTransition(async () => {
-      setFeedback(null);
-      const { ok, payload } = await requestApi<{
-        product: Partial<Pick<EditableSellerProduct, "name" | "currentPrice" | "stock" | "expiryDate">>;
-      }>(`/api/seller/products/${editing.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: draft.name,
-          originalPrice: Number(draft.originalPrice),
-          stock: Number(draft.stock),
-          expiryDate: draft.expiryDate,
-        }),
-      }, "상품 수정에 실패했습니다.");
-      if (!ok || !payload.success) {
-        setFeedback(getApiErrorMessage(payload, "상품 수정에 실패했습니다."));
-        return;
-      }
-
-      setProducts((current) =>
-        current.map((product) =>
-          product.id === editing.id
-            ? {
-                ...product,
-                name: payload.data.product.name ?? draft.name,
-                currentPrice:
-                  payload.data.product.currentPrice ?? Number(draft.originalPrice),
-                stock: payload.data.product.stock ?? Number(draft.stock),
-                expiryDate: payload.data.product.expiryDate ?? draft.expiryDate,
-              }
-            : product,
-        ),
-      );
-      setEditing(null);
-      setDraft({});
-    });
+    setFeedback(null);
+    void updateProductMutation
+      .mutateAsync({
+        id: editing.id,
+        name: draft.name,
+        originalPrice: Number(draft.originalPrice),
+        stock: Number(draft.stock),
+        expiryDate: draft.expiryDate,
+      })
+      .then((data) => {
+        setProducts((current) =>
+          current.map((product) =>
+            product.id === editing.id
+              ? {
+                  ...product,
+                  name: data.product.name ?? draft.name,
+                  currentPrice:
+                    data.product.currentPrice ?? Number(draft.originalPrice),
+                  stock: data.product.stock ?? Number(draft.stock),
+                  expiryDate: data.product.expiryDate ?? draft.expiryDate,
+                }
+              : product,
+          ),
+        );
+        setEditing(null);
+        setDraft({});
+      })
+      .catch((error) => {
+        setFeedback(getApiErrorMessage(error, "상품 수정에 실패했습니다."));
+      });
   }
 
   function submitDelete() {
     if (!deleting) return;
-    startTransition(async () => {
-      setFeedback(null);
-      const { ok, payload } = await requestApi(
-        `/api/seller/products/${deleting.id}`,
-        {
-          method: "DELETE",
-        },
-        "상품 삭제에 실패했습니다.",
-      );
-      if (!ok || !payload.success) {
-        setFeedback(getApiErrorMessage(payload, "상품 삭제에 실패했습니다."));
-        return;
-      }
-
-      setProducts((current) => current.filter((item) => item.id !== deleting.id));
-      setStats((current) => ({
-        ...current,
-        onSale: Math.max(0, current.onSale - 1),
-      }));
-      setDeleting(null);
-    });
+    setFeedback(null);
+    void deleteProductMutation
+      .mutateAsync({ id: deleting.id })
+      .then(() => {
+        setProducts((current) => current.filter((item) => item.id !== deleting.id));
+        setStats((current) => ({
+          ...current,
+          onSale: Math.max(0, current.onSale - 1),
+        }));
+        setDeleting(null);
+      })
+      .catch((error) => {
+        setFeedback(getApiErrorMessage(error, "상품 삭제에 실패했습니다."));
+      });
   }
 
   return (
@@ -265,7 +257,11 @@ export function SellerDashboardClient({
               />
             </div>
             <div className="mt-6 flex gap-3">
-              <Button className="flex-1" onClick={submitEdit} disabled={pending}>
+              <Button
+                className="flex-1"
+                onClick={submitEdit}
+                disabled={updateProductMutation.isPending || deleteProductMutation.isPending}
+              >
                 저장하기
               </Button>
               <Button variant="outline" onClick={() => setEditing(null)}>
@@ -291,7 +287,11 @@ export function SellerDashboardClient({
               <Button variant="outline" className="flex-1" onClick={() => setDeleting(null)}>
                 취소
               </Button>
-              <Button className="flex-1" onClick={submitDelete} disabled={pending}>
+              <Button
+                className="flex-1"
+                onClick={submitDelete}
+                disabled={updateProductMutation.isPending || deleteProductMutation.isPending}
+              >
                 삭제
               </Button>
             </div>

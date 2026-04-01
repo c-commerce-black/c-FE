@@ -4,6 +4,7 @@ import "./globals.css";
 import { getCurrentUser } from "@/lib/auth/server";
 import { env } from "@/lib/shared/env";
 import { AuthStoreHydrator } from "@/components/shared/providers";
+import { QueryProvider } from "@/components/shared/providers";
 import { SplashOverlay } from "@/components/shared/providers";
 
 export const metadata: Metadata = {
@@ -46,9 +47,11 @@ export default async function RootLayout({
       data-scroll-behavior="smooth"
     >
       <body className="min-h-full bg-background text-foreground">
-        <AuthStoreHydrator user={user} />
-        <SplashOverlay />
-        {children}
+        <QueryProvider>
+          <AuthStoreHydrator user={user} />
+          <SplashOverlay />
+          {children}
+        </QueryProvider>
       </body>
     </html>
   );

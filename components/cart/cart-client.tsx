@@ -8,7 +8,11 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/shared/ui";
 import { Card } from "@/components/shared/ui";
 import { Input } from "@/components/shared/ui";
-import { getApiErrorMessage, requestApi } from "@/lib/shared/api";
+import { getApiErrorMessage } from "@/lib/shared/api";
+import {
+  useCreateOrderMutation,
+  useUpdateCartItemQuantityMutation,
+} from "@/hooks/api";
 import type { CartItem, CartState } from "@/lib/cart";
 import { formatCurrency } from "@/lib/shared/utils";
 import { useCheckoutStore } from "@/stores/checkout-store";
@@ -23,6 +27,8 @@ export function CartClient({ initialCart }: { initialCart: CartState }) {
   const [items, setItems] = useState(initialCart.items);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [showCheckoutSheet, setShowCheckoutSheet] = useState(false);
+  const updateQuantityMutation = useUpdateCartItemQuantityMutation();
+  const createOrderMutation = useCreateOrderMutation();
 
   const shippingAddress = useCheckoutStore((state) => state.shippingAddress);
   const showPriceToast = useCheckoutStore((state) => state.showPriceToast);
@@ -65,13 +71,10 @@ export function CartClient({ initialCart }: { initialCart: CartState }) {
     startTransition(async () => {
       setFeedback(null);
       const itemId = getCartItemId(item);
-      const { ok, payload } = await requestApi(`/api/cart/${itemId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ quantity }),
-      }, "수량 변경에 실패했습니다.");
-      if (!ok || !payload.success) {
-        setFeedback(getApiErrorMessage(payload, "수량 변경에 실패했습니다."));
+      try {
+        await updateQuantityMutation.mutateAsync({ itemId, quantity });
+      } catch (error) {
+        setFeedback(getApiErrorMessage(error, "수량 변경에 실패했습니다."));
         return;
       }
 
@@ -95,22 +98,19 @@ export function CartClient({ initialCart }: { initialCart: CartState }) {
 
     startTransition(async () => {
       setFeedback(null);
-      const { ok, payload } = await requestApi<{ order: { id: string } }>("/api/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      try {
+        const data = await createOrderMutation.mutateAsync({
           cartItemIds: selectedItems.map(getCartItemId),
           shippingAddress,
-        }),
-      }, "주문 생성에 실패했습니다.");
-      if (!ok || !payload.success) {
-        setFeedback(getApiErrorMessage(payload, "주문 생성에 실패했습니다."));
+        });
+
+        setShowCheckoutSheet(false);
+        router.push(`/orders/${data.order.id}/success`);
+        router.refresh();
+      } catch (error) {
+        setFeedback(getApiErrorMessage(error, "주문 생성에 실패했습니다."));
         return;
       }
-
-      setShowCheckoutSheet(false);
-      router.push(`/orders/${payload.data.order.id}/success`);
-      router.refresh();
     });
   }
 
@@ -218,7 +218,12 @@ export function CartClient({ initialCart }: { initialCart: CartState }) {
           <Button
             size="lg"
             className="w-full"
-            disabled={pending || !items.length}
+            disabled={
+              pending ||
+              updateQuantityMutation.isPending ||
+              createOrderMutation.isPending ||
+              !items.length
+            }
             onClick={() => setShowCheckoutSheet(true)}
           >
             결제하기
@@ -250,12 +255,16 @@ export function CartClient({ initialCart }: { initialCart: CartState }) {
               </Button>
               <Button
                 className="flex-1"
-                disabled={pending}
+                disabled={
+                  pending ||
+                  updateQuantityMutation.isPending ||
+                  createOrderMutation.isPending
+                }
                 onClick={() => {
                   void checkout();
                 }}
               >
-                {pending ? "결제 진행 중..." : "확인"}
+                {pending || createOrderMutation.isPending ? "결제 진행 중..." : "확인"}
               </Button>
             </div>
           </Card>

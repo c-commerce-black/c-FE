@@ -1,3 +1,5 @@
+import axios, { type AxiosError, type AxiosResponse } from "axios";
+
 import type { ApiResponse } from "@/lib/shared/types";
 
 const MAX_VISIBLE_MESSAGE_LENGTH = 140;
@@ -46,7 +48,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-function isApiResponseShape<T>(value: unknown): value is ApiResponse<T> {
+export function isApiResponseShape<T>(value: unknown): value is ApiResponse<T> {
   if (!isRecord(value) || typeof value.success !== "boolean") {
     return false;
   }
@@ -68,20 +70,19 @@ function normalizeApiResponse<T>(
       return { payload: value, unexpected: false };
     }
 
+    const message = sanitizeUserMessage(value.error.message, fallbackMessage);
     return {
       payload: {
         success: false,
         error: {
-          message: sanitizeUserMessage(value.error.message, fallbackMessage),
+          message,
           statusCode:
             typeof value.error.statusCode === "number"
               ? value.error.statusCode
               : statusCode,
         },
       },
-      unexpected:
-        sanitizeUserMessage(value.error.message, fallbackMessage) === fallbackMessage &&
-        value.error.message !== fallbackMessage,
+      unexpected: message === fallbackMessage && value.error.message !== fallbackMessage,
     };
   }
 
@@ -114,7 +115,7 @@ function normalizeApiResponse<T>(
 function parseApiResponseText<T>(
   rawText: string,
   statusCode: number,
-  contentType: string | null,
+  contentType: string | null | undefined,
   fallbackMessage: string,
 ) {
   const text = rawText.trim();
@@ -179,45 +180,114 @@ export function sanitizeUserMessage(
   return trimmed.replace(/\s+/g, " ");
 }
 
-export async function readApiResponseWithMeta<T>(
-  response: Response,
+export function resolveApiResponse<T>(
+  data: unknown,
+  statusCode: number,
+  fallbackMessage: string,
+  contentType?: string | null,
+) {
+  if (data === null || data === undefined) {
+    return {
+      payload: createFallbackResponse<T>(statusCode, fallbackMessage),
+      unexpected: true,
+      reason: "empty-body" as const,
+    };
+  }
+
+  if (typeof data === "string") {
+    return parseApiResponseText<T>(data, statusCode, contentType, fallbackMessage);
+  }
+
+  return normalizeApiResponse<T>(data, statusCode, fallbackMessage);
+}
+
+export function resolveApiResponseFromAxios<T>(
+  response: AxiosResponse<unknown>,
   fallbackMessage: string,
 ) {
-  const rawText = await response.text();
-  return parseApiResponseText<T>(
-    rawText,
+  const contentType =
+    typeof response.headers?.["content-type"] === "string"
+      ? response.headers["content-type"]
+      : null;
+
+  return resolveApiResponse<T>(
+    response.data,
     response.status,
-    response.headers.get("content-type"),
     fallbackMessage,
+    contentType,
   );
 }
 
-export async function readApiResponse<T>(
-  response: Response,
-  fallbackMessage: string,
+export function logUnexpectedApiResponse(
+  response: AxiosResponse<unknown>,
+  reason: UnexpectedApiResponseReason | undefined,
 ) {
-  const { payload } = await readApiResponseWithMeta<T>(response, fallbackMessage);
-  return payload;
+  console.error("Unexpected backend response", {
+    path: response.config.url,
+    status: response.status,
+    contentType: response.headers?.["content-type"],
+    reason,
+  });
 }
 
-export async function requestApi<T>(
-  input: RequestInfo | URL,
-  init: RequestInit | undefined,
+export function unwrapApiResponse<T>(
+  response: AxiosResponse<unknown>,
   fallbackMessage: string,
 ) {
-  const response = await fetch(input, init);
-  const { payload } = await readApiResponseWithMeta<T>(response, fallbackMessage);
+  const { payload, unexpected, reason } = resolveApiResponseFromAxios<T>(
+    response,
+    fallbackMessage,
+  );
 
-  return {
-    ok: response.ok,
-    status: response.status,
-    payload,
-  };
+  if (unexpected) {
+    logUnexpectedApiResponse(response, reason);
+  }
+
+  if (!payload.success) {
+    throw new Error(payload.error.message);
+  }
+
+  return payload.data;
+}
+
+export function getApiErrorStatus(error: unknown) {
+  return axios.isAxiosError(error) ? error.response?.status : undefined;
+}
+
+export function getApiErrorPayload<T>(
+  error: unknown,
+  fallbackMessage: string,
+): ApiResponse<T> {
+  if (axios.isAxiosError(error)) {
+    const statusCode = error.response?.status ?? 500;
+    const contentType =
+      typeof error.response?.headers?.["content-type"] === "string"
+        ? error.response.headers["content-type"]
+        : null;
+
+    return resolveApiResponse<T>(
+      error.response?.data,
+      statusCode,
+      fallbackMessage,
+      contentType,
+    ).payload;
+  }
+
+  if (isApiResponseShape<T>(error)) {
+    return error;
+  }
+
+  return createFallbackResponse<T>(500, fallbackMessage);
 }
 
 export function getApiErrorMessage<T>(
-  payload: ApiResponse<T>,
+  error: unknown,
   fallbackMessage: string,
 ) {
+  const payload = getApiErrorPayload<T>(error, fallbackMessage);
   return payload.success ? fallbackMessage : payload.error.message;
+}
+
+export function isAxiosError(error: unknown): error is AxiosError {
+  return axios.isAxiosError(error);
 }

@@ -1,10 +1,13 @@
-import { fetchBackend } from "@/lib/shared/api";
+import { backendApi, unwrapApiResponse } from "@/lib/shared/api";
 
 import type { AlertItem } from "./types";
 
 export async function getAlerts(token: string) {
-  return fetchBackend<{ wishAlerts: AlertItem[]; todayDeals: AlertItem[] }>(
-    "/api/alerts",
-    { token },
+  const response = await backendApi.get("/api/alerts", {
+    token,
+  });
+  return unwrapApiResponse<{ wishAlerts: AlertItem[]; todayDeals: AlertItem[] }>(
+    response,
+    "알림 목록을 불러오지 못했습니다.",
   );
 }

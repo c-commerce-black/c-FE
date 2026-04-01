@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState } from "react";
 import { Camera } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -8,7 +8,8 @@ import { Button } from "@/components/shared/ui";
 import { Card } from "@/components/shared/ui";
 import { Input } from "@/components/shared/ui";
 import { Textarea } from "@/components/shared/ui";
-import { getApiErrorMessage, requestApi } from "@/lib/shared/api";
+import { getApiErrorMessage } from "@/lib/shared/api";
+import { useCreateSellerProductMutation } from "@/hooks/api";
 import { CATEGORY_LABELS } from "@/lib/catalog";
 
 const categoryOptions = Object.entries(CATEGORY_LABELS);
@@ -21,7 +22,7 @@ function formatPreviewPrice(value: string, label: string) {
 
 export function SellerProductForm() {
   const router = useRouter();
-  const [pending, startTransition] = useTransition();
+  const createProductMutation = useCreateSellerProductMutation();
   const [error, setError] = useState<string | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [values, setValues] = useState({
@@ -49,28 +50,24 @@ export function SellerProductForm() {
 
   function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    startTransition(async () => {
-      setError(null);
-      const { ok, payload } = await requestApi("/api/seller/products", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: values.name,
-          category: values.category,
-          originalPrice: Number(values.originalPrice),
-          stock: Number(values.stock),
-          expiryDate: values.expiryDate,
-          description: values.description,
-          imageUrl: values.imageUrl || undefined,
-        }),
-      }, "상품 등록에 실패했습니다.");
-      if (!ok || !payload.success) {
-        setError(getApiErrorMessage(payload, "상품 등록에 실패했습니다."));
-        return;
-      }
-      router.push("/seller");
-      router.refresh();
-    });
+    setError(null);
+    void createProductMutation
+      .mutateAsync({
+        name: values.name,
+        category: values.category,
+        originalPrice: Number(values.originalPrice),
+        stock: Number(values.stock),
+        expiryDate: values.expiryDate,
+        description: values.description,
+        imageUrl: values.imageUrl || undefined,
+      })
+      .then(() => {
+        router.push("/seller");
+        router.refresh();
+      })
+      .catch((error) => {
+        setError(getApiErrorMessage(error, "상품 등록에 실패했습니다."));
+      });
   }
 
   return (
@@ -186,8 +183,13 @@ export function SellerProductForm() {
           </div>
         </Card>
         {error ? <p className="text-sm text-urgent">{error}</p> : null}
-        <Button type="submit" size="lg" className="w-full" disabled={pending}>
-          {pending ? "등록 중..." : "등록하기"}
+        <Button
+          type="submit"
+          size="lg"
+          className="w-full"
+          disabled={createProductMutation.isPending}
+        >
+          {createProductMutation.isPending ? "등록 중..." : "등록하기"}
         </Button>
       </section>
     </form>

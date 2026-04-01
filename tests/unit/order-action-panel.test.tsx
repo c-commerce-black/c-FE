@@ -4,9 +4,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { OrderActionPanel } from "@/components/orders/order-action-panel";
 
-const { refresh, requestApi } = vi.hoisted(() => ({
+const { refresh, mutateAsync } = vi.hoisted(() => ({
   refresh: vi.fn(),
-  requestApi: vi.fn(),
+  mutateAsync: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -15,21 +15,21 @@ vi.mock("next/navigation", () => ({
   }),
 }));
 
-vi.mock("@/lib/shared/api", async () => {
-  const actual = await vi.importActual<typeof import("@/lib/shared/api")>(
-    "@/lib/shared/api",
-  );
-
-  return {
-    ...actual,
-    requestApi,
-  };
-});
+vi.mock("@/hooks/api", () => ({
+  useCancelOrderMutation: () => ({
+    mutateAsync,
+    isPending: false,
+  }),
+  useUpdateOrderStatusMutation: () => ({
+    mutateAsync,
+    isPending: false,
+  }),
+}));
 
 describe("OrderActionPanel", () => {
   beforeEach(() => {
     refresh.mockReset();
-    requestApi.mockReset();
+    mutateAsync.mockReset();
   });
 
   it("shows cancel and next status actions for pending orders", () => {
@@ -40,16 +40,19 @@ describe("OrderActionPanel", () => {
   });
 
   it("surfaces backend authorization errors from status changes", async () => {
-    requestApi.mockResolvedValue({
-      ok: false,
-      status: 403,
-      payload: {
-        success: false,
-        error: {
-          message: "본인 상품 주문만 변경할 수 있습니다.",
-          statusCode: 403,
+    mutateAsync.mockRejectedValue({
+      response: {
+        status: 403,
+        data: {
+          success: false,
+          error: {
+            message: "본인 상품 주문만 변경할 수 있습니다.",
+            statusCode: 403,
+          },
         },
+        headers: { "content-type": "application/json" },
       },
+      isAxiosError: true,
     });
 
     render(<OrderActionPanel orderId="order123" status="PREPARING" canCancel={false} />);

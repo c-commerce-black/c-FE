@@ -5,7 +5,14 @@ import { Heart, Minus, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/shared/ui";
-import { getApiErrorMessage, requestApi } from "@/lib/shared/api";
+import {
+  getApiErrorMessage,
+  getApiErrorStatus,
+} from "@/lib/shared/api";
+import {
+  useAddProductToCartMutation,
+  useCreateProductAlertMutation,
+} from "@/hooks/api";
 import type { ProductDetail } from "@/lib/catalog";
 import { formatCurrency } from "@/lib/shared/utils";
 
@@ -22,6 +29,8 @@ export function ProductDetailActions({
   const [submitting, startSubmitting] = useTransition();
   const [feedback, setFeedback] = useState<string | null>(null);
   const [remain, setRemain] = useState(initialRemainSeconds);
+  const addToCartMutation = useAddProductToCartMutation();
+  const createAlertMutation = useCreateProductAlertMutation();
 
   const total = useMemo(
     () => product.currentPrice * quantity,
@@ -41,48 +50,37 @@ export function ProductDetailActions({
   async function handleCart() {
     startSubmitting(async () => {
       setFeedback(null);
-      const { ok, status, payload } = await requestApi("/api/cart", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      try {
+        await addToCartMutation.mutateAsync({
           productId: product.id,
           quantity,
-        }),
-      }, "장바구니에 담지 못했습니다.");
-
-      if (!ok || !payload.success) {
-        if (status === 401) {
+        });
+        router.push("/cart");
+      } catch (error) {
+        if (getApiErrorStatus(error) === 401) {
           router.push(`/login?next=${encodeURIComponent(`/products/${product.id}`)}`);
           return;
         }
-        setFeedback(getApiErrorMessage(payload, "장바구니에 담지 못했습니다."));
-        return;
+        setFeedback(getApiErrorMessage(error, "장바구니에 담지 못했습니다."));
       }
-
-      router.push("/cart");
     });
   }
 
   async function handleWish() {
     startWish(async () => {
       setFeedback(null);
-      const { ok, status, payload } = await requestApi("/api/alerts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      try {
+        await createAlertMutation.mutateAsync({
           productId: product.id,
-        }),
-      }, "찜 처리에 실패했습니다.");
-      if (!ok || !payload.success) {
-        if (status === 401) {
+        });
+        setFeedback("찜 목록에 추가했습니다.");
+      } catch (error) {
+        if (getApiErrorStatus(error) === 401) {
           router.push(`/login?next=${encodeURIComponent(`/products/${product.id}`)}`);
           return;
         }
-        setFeedback(getApiErrorMessage(payload, "찜 처리에 실패했습니다."));
-        return;
+        setFeedback(getApiErrorMessage(error, "찜 처리에 실패했습니다."));
       }
-
-      setFeedback("찜 목록에 추가했습니다.");
     });
   }
 
@@ -163,7 +161,7 @@ export function ProductDetailActions({
           variant="outline"
           size="icon"
           onClick={handleWish}
-          disabled={wishing}
+          disabled={wishing || createAlertMutation.isPending}
           className="shrink-0 rounded-[16px]"
           aria-label="찜하기"
         >
@@ -173,9 +171,9 @@ export function ProductDetailActions({
           className="flex-1 rounded-[16px]"
           size="lg"
           onClick={handleCart}
-          disabled={submitting}
+          disabled={submitting || addToCartMutation.isPending}
         >
-          {submitting ? "담는 중..." : "지금 구매하기"}
+          {submitting || addToCartMutation.isPending ? "담는 중..." : "지금 구매하기"}
         </Button>
       </div>
       {feedback ? <p className="text-sm text-text-secondary">{feedback}</p> : null}

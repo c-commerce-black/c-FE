@@ -1,6 +1,6 @@
 import { cache } from "react";
 
-import { fetchBackend } from "@/lib/shared/api";
+import { backendApi, unwrapApiResponse } from "@/lib/shared/api";
 
 import { MOCK_PRODUCT_DETAILS, MOCK_PRODUCTS } from "./mock-data";
 import { normalizeProductFeedPage } from "./helpers";
@@ -61,8 +61,8 @@ async function getProductsPage({
   status,
 }: ProductQueryOptions) {
   try {
-    return await fetchBackend<ProductListData>("/api/products", {
-      query: {
+    const response = await backendApi.get("/api/products", {
+      params: {
         page,
         limit,
         category,
@@ -70,6 +70,10 @@ async function getProductsPage({
         status,
       },
     });
+    return unwrapApiResponse<ProductListData>(
+      response,
+      "상품 목록을 불러오지 못했습니다.",
+    );
   } catch {
     return getMockProductsData({
       page,
@@ -86,7 +90,11 @@ export const getProducts = cache(
 
 export const getProductDetail = cache(async (id: string) => {
   try {
-    return await fetchBackend<{ product: ProductDetail }>(`/api/products/${id}`);
+    const response = await backendApi.get(`/api/products/${id}`);
+    return unwrapApiResponse<{ product: ProductDetail }>(
+      response,
+      "상품 정보를 불러오지 못했습니다.",
+    );
   } catch {
     const fallback = MOCK_PRODUCT_DETAILS[id];
     if (!fallback) throw new Error("product-not-found");

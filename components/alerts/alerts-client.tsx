@@ -5,7 +5,8 @@ import Link from "next/link";
 
 import { Card } from "@/components/shared/ui";
 import { Toggle } from "@/components/shared/ui";
-import { getApiErrorMessage, requestApi } from "@/lib/shared/api";
+import { getApiErrorMessage } from "@/lib/shared/api";
+import { useCreateAlertMutation, useToggleAlertMutation } from "@/hooks/api";
 import type { AlertItem } from "@/lib/alerts";
 import { formatRemainTime } from "@/lib/catalog";
 import { formatCurrency } from "@/lib/shared/utils";
@@ -58,6 +59,8 @@ export function AlertsClient({
   const [wishAlerts, setWishAlerts] = useState(initialWishAlerts);
   const [todayDeals, setTodayDeals] = useState(initialTodayDeals);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const createAlertMutation = useCreateAlertMutation();
+  const toggleAlertMutation = useToggleAlertMutation();
 
   function updateCollections(nextItem: AlertItem) {
     setWishAlerts((current) =>
@@ -77,46 +80,36 @@ export function AlertsClient({
       setFeedback(null);
 
       if (!item.alertId) {
-        const { ok, payload } = await requestApi<{ alert: { id: string; isOn: boolean } }>(
-          "/api/alerts",
-          {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ productId: item.product.id }),
-          },
-          "찜 처리에 실패했습니다.",
-        );
-        if (!ok || !payload.success) {
-          setFeedback(getApiErrorMessage(payload, "찜 처리에 실패했습니다."));
-          return;
+        try {
+          const data = await createAlertMutation.mutateAsync({
+            productId: item.product.id,
+          });
+
+          const nextItem = {
+            ...item,
+            alertId: data.alert.id,
+            isOn: data.alert.isOn,
+          };
+          updateCollections(nextItem);
+          setWishAlerts((current) => [nextItem, ...current]);
+        } catch (error) {
+          setFeedback(getApiErrorMessage(error, "찜 처리에 실패했습니다."));
         }
+        return;
+      }
 
-        const nextItem = {
+      try {
+        const data = await toggleAlertMutation.mutateAsync({
+          alertId: item.alertId,
+        });
+
+        updateCollections({
           ...item,
-          alertId: payload.data.alert.id,
-          isOn: payload.data.alert.isOn,
-        };
-        updateCollections(nextItem);
-        setWishAlerts((current) => [nextItem, ...current]);
-        return;
+          isOn: data.alert.isOn,
+        });
+      } catch (error) {
+        setFeedback(getApiErrorMessage(error, "알림 토글에 실패했습니다."));
       }
-
-      const { ok, payload } = await requestApi<{ alert: { isOn: boolean } }>(
-        `/api/alerts/${item.alertId}/toggle`,
-        {
-          method: "PATCH",
-        },
-        "알림 토글에 실패했습니다.",
-      );
-      if (!ok || !payload.success) {
-        setFeedback(getApiErrorMessage(payload, "알림 토글에 실패했습니다."));
-        return;
-      }
-
-      updateCollections({
-        ...item,
-        isOn: payload.data.alert.isOn,
-      });
     });
   }
 
@@ -172,7 +165,9 @@ export function AlertsClient({
 
       {feedback ? (
         <p className="text-[13px] text-text-secondary">{feedback}</p>
-      ) : pending ? (
+      ) : pending ||
+        createAlertMutation.isPending ||
+        toggleAlertMutation.isPending ? (
         <p className="text-[13px] text-text-secondary">변경 사항을 반영하는 중입니다.</p>
       ) : null}
     </div>
