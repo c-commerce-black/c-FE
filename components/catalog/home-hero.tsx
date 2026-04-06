@@ -83,14 +83,18 @@ export function HomeHero({
 
         <div className="mt-4 flex items-end gap-2">
           <span className="text-[32px] leading-none font-black tracking-[-0.06em] text-foreground">
-            {product ? formatCurrency(product.currentPrice) : "5,900원"}
+            {product ? formatCurrency(product.currentPrice) : "상품 준비 중"}
           </span>
-          <span className="pb-0.5 text-[14px] text-text-tertiary line-through">
-            {product ? formatCurrency(product.originalPrice) : "8,900원"}
-          </span>
-          <span className="pb-0.5 text-[14px] font-bold text-brand-primary">
-            {product?.discountRate ?? 0}% 할인
-          </span>
+          {product ? (
+            <>
+              <span className="pb-0.5 text-[14px] text-text-tertiary line-through">
+                {formatCurrency(product.originalPrice)}
+              </span>
+              <span className="pb-0.5 text-[14px] font-bold text-brand-primary">
+                {product.discountRate}% 할인
+              </span>
+            </>
+          ) : null}
         </div>
 
         <div className="mt-5 rounded-[16px] bg-[#f7fafc] p-4">

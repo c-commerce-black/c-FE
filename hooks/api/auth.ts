@@ -2,7 +2,7 @@
 
 import { useMutation } from "@tanstack/react-query";
 
-import type { User } from "@/lib/auth";
+import type { TermsKey, User } from "@/lib/auth";
 import { appApi, unwrapApiResponse } from "@/lib/shared/api";
 
 export type LoginPayload = {
@@ -15,16 +15,22 @@ export type SignupPayload = {
   email: string;
   password: string;
   shopName?: string;
+  agreements: Record<TermsKey, boolean>;
 };
 
 export function useLoginMutation() {
   return useMutation({
     mutationFn: async (payload: LoginPayload) => {
       const response = await appApi.post("/api/auth/login", payload);
-      return unwrapApiResponse<{ user: User }>(
-        response,
-        "로그인에 실패했습니다.",
-      );
+      const data = unwrapApiResponse<{
+        user?: User;
+        accessToken?: string;
+        expiresIn?: number;
+      }>(response, "로그인에 실패했습니다.");
+
+      return {
+        user: data.user as User,
+      };
     },
   });
 }
@@ -33,10 +39,15 @@ export function useSignupMutation() {
   return useMutation({
     mutationFn: async (payload: SignupPayload) => {
       const response = await appApi.post("/api/auth/register", payload);
-      return unwrapApiResponse<{ user: User }>(
-        response,
-        "회원가입에 실패했습니다.",
-      );
+      const data = unwrapApiResponse<{
+        user?: User;
+        accessToken?: string;
+        expiresIn?: number;
+      }>(response, "회원가입에 실패했습니다.");
+
+      return {
+        user: data.user as User,
+      };
     },
   });
 }

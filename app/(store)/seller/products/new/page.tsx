@@ -6,7 +6,7 @@ export default async function SellerProductNewPage() {
 
   return (
     <div className="cc-grid py-5">
-      <SellerProductForm />
+      <SellerProductForm mode="create" />
     </div>
   );
 }

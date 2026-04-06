@@ -2,39 +2,23 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { X } from "lucide-react";
 
-import { Button } from "@/components/shared/ui";
-import { Card } from "@/components/shared/ui";
-import { EmptyState } from "@/components/shared/ui";
-import { Input } from "@/components/shared/ui";
+import { Button, Card, EmptyState } from "@/components/shared/ui";
+import { useDeleteSellerProductMutation } from "@/hooks/api";
 import { getApiErrorMessage } from "@/lib/shared/api";
-import {
-  useDeleteSellerProductMutation,
-  useUpdateSellerProductMutation,
-} from "@/hooks/api";
-import type { SellerProduct, SellerProductsData } from "@/lib/seller";
+import type { SellerProductsData } from "@/lib/seller";
 import { formatCurrency, formatDate } from "@/lib/shared/utils";
-
-type EditableSellerProduct = SellerProduct & {
-  originalPrice?: number;
-};
 
 export function SellerDashboardClient({
   initialData,
 }: {
   initialData: SellerProductsData;
 }) {
-  const [products, setProducts] = useState<EditableSellerProduct[]>(
-    initialData.products,
-  );
+  const [products, setProducts] = useState(initialData.products);
   const [todaySales] = useState(initialData.todaySales);
   const [stats, setStats] = useState(initialData.stats);
-  const [editing, setEditing] = useState<EditableSellerProduct | null>(null);
-  const [draft, setDraft] = useState<Record<string, string>>({});
-  const [deleting, setDeleting] = useState<EditableSellerProduct | null>(null);
+  const [deleting, setDeleting] = useState<(typeof initialData.products)[number] | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
-  const updateProductMutation = useUpdateSellerProductMutation();
   const deleteProductMutation = useDeleteSellerProductMutation();
 
   const statCards = useMemo(
@@ -46,52 +30,9 @@ export function SellerDashboardClient({
     [stats],
   );
 
-  function beginEdit(product: EditableSellerProduct) {
-    setEditing(product);
-    setDraft({
-      name: product.name,
-      originalPrice: String(product.originalPrice ?? product.currentPrice),
-      stock: String(product.stock),
-      expiryDate: product.expiryDate.slice(0, 10),
-    });
-  }
-
-  function submitEdit() {
-    if (!editing) return;
-    setFeedback(null);
-    void updateProductMutation
-      .mutateAsync({
-        id: editing.id,
-        name: draft.name,
-        originalPrice: Number(draft.originalPrice),
-        stock: Number(draft.stock),
-        expiryDate: draft.expiryDate,
-      })
-      .then((data) => {
-        setProducts((current) =>
-          current.map((product) =>
-            product.id === editing.id
-              ? {
-                  ...product,
-                  name: data.product.name ?? draft.name,
-                  currentPrice:
-                    data.product.currentPrice ?? Number(draft.originalPrice),
-                  stock: data.product.stock ?? Number(draft.stock),
-                  expiryDate: data.product.expiryDate ?? draft.expiryDate,
-                }
-              : product,
-          ),
-        );
-        setEditing(null);
-        setDraft({});
-      })
-      .catch((error) => {
-        setFeedback(getApiErrorMessage(error, "상품 수정에 실패했습니다."));
-      });
-  }
-
   function submitDelete() {
     if (!deleting) return;
+
     setFeedback(null);
     void deleteProductMutation
       .mutateAsync({ id: deleting.id })
@@ -156,9 +97,16 @@ export function SellerDashboardClient({
               <div className="space-y-4">
                 <div>
                   <div className="flex items-start justify-between gap-3">
-                    <h2 className="text-[18px] font-black tracking-[-0.04em] text-foreground">
-                      {product.name}
-                    </h2>
+                    <div>
+                      <h2 className="text-[18px] font-black tracking-[-0.04em] text-foreground">
+                        {product.name}
+                      </h2>
+                      {product.description ? (
+                        <p className="mt-2 line-clamp-2 text-[13px] leading-5 text-text-secondary">
+                          {product.description}
+                        </p>
+                      ) : null}
+                    </div>
                     <span
                       className={`rounded-full px-3 py-1 text-[13px] font-bold ${
                         product.status === "EXPIRY_SOON"
@@ -176,13 +124,12 @@ export function SellerDashboardClient({
                 </div>
                 <div className="h-px bg-border" />
                 <div className="flex items-center gap-5 text-[15px] font-semibold">
-                  <button
-                    type="button"
+                  <Link
+                    href={`/seller/products/${product.id}/edit`}
                     className="text-brand-secondary"
-                    onClick={() => beginEdit(product)}
                   >
                     수정
-                  </button>
+                  </Link>
                   <button
                     type="button"
                     className="text-[#ff5d5d]"
@@ -204,75 +151,6 @@ export function SellerDashboardClient({
         )}
       </section>
 
-      {editing ? (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-inverted/40 px-4 py-6">
-          <Card className="w-full max-w-[396px] p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-[20px] font-black tracking-[-0.05em] text-foreground">
-                  상품 수정
-                </h3>
-              </div>
-              <button type="button" onClick={() => setEditing(null)}>
-                <X className="size-5 text-text-tertiary" />
-              </button>
-            </div>
-            <div className="mt-5 space-y-4">
-              <Input
-                label="상품명"
-                value={draft.name ?? ""}
-                onChange={(event) =>
-                  setDraft((current) => ({ ...current, name: event.target.value }))
-                }
-              />
-              <Input
-                label="가격"
-                type="number"
-                value={draft.originalPrice ?? ""}
-                onChange={(event) =>
-                  setDraft((current) => ({
-                    ...current,
-                    originalPrice: event.target.value,
-                  }))
-                }
-              />
-              <Input
-                label="재고"
-                type="number"
-                value={draft.stock ?? ""}
-                onChange={(event) =>
-                  setDraft((current) => ({ ...current, stock: event.target.value }))
-                }
-              />
-              <Input
-                label="유통기한"
-                type="date"
-                value={draft.expiryDate ?? ""}
-                onChange={(event) =>
-                  setDraft((current) => ({
-                    ...current,
-                    expiryDate: event.target.value,
-                  }))
-                }
-              />
-            </div>
-            <div className="mt-6 flex gap-3">
-              <Button
-                className="flex-1"
-                onClick={submitEdit}
-                disabled={updateProductMutation.isPending || deleteProductMutation.isPending}
-              >
-                저장하기
-              </Button>
-              <Button variant="outline" onClick={() => setEditing(null)}>
-                취소
-              </Button>
-            </div>
-            {feedback ? <p className="mt-4 text-sm text-text-secondary">{feedback}</p> : null}
-          </Card>
-        </div>
-      ) : null}
-
       {deleting ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-inverted/40 px-4">
           <Card className="w-full max-w-[360px] p-5">
@@ -280,8 +158,7 @@ export function SellerDashboardClient({
               정말 삭제할까요?
             </h3>
             <p className="mt-3 text-[14px] leading-6 text-text-secondary">
-              {deleting.name} 상품은 소프트 삭제 처리되어 일반 상품 목록에서
-              사라집니다.
+              {deleting.name} 상품은 소프트 삭제 처리되어 일반 상품 목록에서 사라집니다.
             </p>
             <div className="mt-6 flex gap-3">
               <Button variant="outline" className="flex-1" onClick={() => setDeleting(null)}>
@@ -290,7 +167,7 @@ export function SellerDashboardClient({
               <Button
                 className="flex-1"
                 onClick={submitDelete}
-                disabled={updateProductMutation.isPending || deleteProductMutation.isPending}
+                disabled={deleteProductMutation.isPending}
               >
                 삭제
               </Button>
@@ -300,7 +177,7 @@ export function SellerDashboardClient({
         </div>
       ) : null}
 
-      {feedback && !editing && !deleting ? (
+      {feedback && !deleting ? (
         <p className="text-sm text-text-secondary">{feedback}</p>
       ) : null}
     </div>

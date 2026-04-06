@@ -6,6 +6,7 @@ export type AlertProduct = {
   currentPrice: number;
   status: ProductStatus;
   remainSeconds: number;
+  imageUrl?: string | null;
 };
 
 export type AlertItem = {

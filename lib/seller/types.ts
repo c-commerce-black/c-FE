@@ -4,9 +4,13 @@ import type { Pagination } from "@/lib/shared/types";
 export type SellerProduct = {
   id: string;
   name: string;
+  description?: string | null;
+  category?: string | null;
+  originalPrice?: number;
   currentPrice: number;
   stock: number;
   expiryDate: string;
+  imageUrl?: string | null;
   status: ProductStatus;
   todaySoldCount: number;
 };

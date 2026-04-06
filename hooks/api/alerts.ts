@@ -27,3 +27,19 @@ export function useToggleAlertMutation() {
     },
   });
 }
+
+export function useDeleteAlertMutation() {
+  return useMutation({
+    mutationFn: async ({ alertId }: { alertId: string }) => {
+      const response = await appApi.delete(`/api/alerts/${alertId}`);
+      return unwrapApiResponse<{ message?: string }>(
+        response,
+        "알림 해제에 실패했습니다.",
+        {
+          allowEmptySuccess: true,
+          emptyData: {},
+        },
+      );
+    },
+  });
+}

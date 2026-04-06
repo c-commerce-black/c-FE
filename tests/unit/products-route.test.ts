@@ -7,13 +7,8 @@ const { getProducts } = vi.hoisted(() => ({
   getProducts: vi.fn(),
 }));
 
-vi.mock("@/lib/catalog", async () => {
-  const actual = await vi.importActual<typeof import("@/lib/catalog")>(
-    "@/lib/catalog",
-  );
-
+vi.mock("@/lib/catalog/service", async () => {
   return {
-    ...actual,
     getProducts,
   };
 });

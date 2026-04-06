@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
-import { Minus, Plus } from "lucide-react";
+import { Minus, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/shared/ui";
@@ -10,7 +10,9 @@ import { Card } from "@/components/shared/ui";
 import { Input } from "@/components/shared/ui";
 import { getApiErrorMessage } from "@/lib/shared/api";
 import {
+  useClearCartMutation,
   useCreateOrderMutation,
+  useDeleteCartItemMutation,
   useUpdateCartItemQuantityMutation,
 } from "@/hooks/api";
 import type { CartItem, CartState } from "@/lib/cart";
@@ -28,6 +30,8 @@ export function CartClient({ initialCart }: { initialCart: CartState }) {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [showCheckoutSheet, setShowCheckoutSheet] = useState(false);
   const updateQuantityMutation = useUpdateCartItemQuantityMutation();
+  const deleteCartItemMutation = useDeleteCartItemMutation();
+  const clearCartMutation = useClearCartMutation();
   const createOrderMutation = useCreateOrderMutation();
 
   const shippingAddress = useCheckoutStore((state) => state.shippingAddress);
@@ -114,6 +118,31 @@ export function CartClient({ initialCart }: { initialCart: CartState }) {
     });
   }
 
+  function removeItem(item: CartItem) {
+    startTransition(async () => {
+      setFeedback(null);
+      const itemId = getCartItemId(item);
+      try {
+        await deleteCartItemMutation.mutateAsync({ itemId });
+        setItems((current) => current.filter((entry) => getCartItemId(entry) !== itemId));
+      } catch (error) {
+        setFeedback(getApiErrorMessage(error, "장바구니 상품 삭제에 실패했습니다."));
+      }
+    });
+  }
+
+  function clearCart() {
+    startTransition(async () => {
+      setFeedback(null);
+      try {
+        await clearCartMutation.mutateAsync();
+        setItems([]);
+      } catch (error) {
+        setFeedback(getApiErrorMessage(error, "장바구니를 비우지 못했습니다."));
+      }
+    });
+  }
+
   return (
     <div className="relative grid gap-6">
       {showPriceToast ? (
@@ -131,7 +160,25 @@ export function CartClient({ initialCart }: { initialCart: CartState }) {
               장바구니
             </h1>
           </div>
-          <span className="text-[14px] text-text-secondary">{items.length}개</span>
+          <div className="flex items-center gap-3">
+            <span className="text-[14px] text-text-secondary">{items.length}개</span>
+            {items.length ? (
+              <button
+                type="button"
+                onClick={clearCart}
+                className="text-[13px] font-semibold text-text-secondary"
+                disabled={
+                  pending ||
+                  updateQuantityMutation.isPending ||
+                  deleteCartItemMutation.isPending ||
+                  clearCartMutation.isPending ||
+                  createOrderMutation.isPending
+                }
+              >
+                전체 비우기
+              </button>
+            ) : null}
+          </div>
         </div>
         <div className="space-y-4">
           {items.map((item) => {
@@ -177,6 +224,14 @@ export function CartClient({ initialCart }: { initialCart: CartState }) {
                     >
                       <Plus className="size-4" />
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => removeItem(item)}
+                      className="ml-1 flex size-8 items-center justify-center rounded-[10px] border border-border bg-white text-text-secondary"
+                      aria-label="장바구니 상품 삭제"
+                    >
+                      <Trash2 className="size-4" />
+                    </button>
                   </div>
                 </div>
               </Card>
@@ -221,6 +276,8 @@ export function CartClient({ initialCart }: { initialCart: CartState }) {
             disabled={
               pending ||
               updateQuantityMutation.isPending ||
+              deleteCartItemMutation.isPending ||
+              clearCartMutation.isPending ||
               createOrderMutation.isPending ||
               !items.length
             }
@@ -258,6 +315,8 @@ export function CartClient({ initialCart }: { initialCart: CartState }) {
                 disabled={
                   pending ||
                   updateQuantityMutation.isPending ||
+                  deleteCartItemMutation.isPending ||
+                  clearCartMutation.isPending ||
                   createOrderMutation.isPending
                 }
                 onClick={() => {

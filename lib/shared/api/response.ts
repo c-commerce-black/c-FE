@@ -18,6 +18,11 @@ type ApiResponseMeta<T> = {
   reason?: UnexpectedApiResponseReason;
 };
 
+type ResolveApiResponseOptions<T> = {
+  allowEmptySuccess?: boolean;
+  emptyData?: T;
+};
+
 const SUSPICIOUS_MESSAGE_PATTERNS = [
   /<!doctype/i,
   /<(html|body|head|meta|script|style|link)\b/i,
@@ -44,6 +49,17 @@ function createFallbackResponse<T>(
   };
 }
 
+function createEmptySuccessResponse<T>(emptyData?: T): ApiResponse<T> {
+  return {
+    success: true,
+    data: (emptyData ?? ({} as T)) as T,
+  };
+}
+
+function isSuccessfulStatus(statusCode: number) {
+  return statusCode >= 200 && statusCode < 300;
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
@@ -64,6 +80,7 @@ function normalizeApiResponse<T>(
   value: unknown,
   statusCode: number,
   fallbackMessage: string,
+  options?: ResolveApiResponseOptions<T>,
 ): ApiResponseMeta<T> {
   if (isApiResponseShape<T>(value)) {
     if (value.success) {
@@ -87,6 +104,13 @@ function normalizeApiResponse<T>(
   }
 
   if (isRecord(value) && Object.keys(value).length === 0) {
+    if (options?.allowEmptySuccess && isSuccessfulStatus(statusCode)) {
+      return {
+        payload: createEmptySuccessResponse(options.emptyData),
+        unexpected: false,
+      };
+    }
+
     return {
       payload: createFallbackResponse<T>(statusCode, fallbackMessage),
       unexpected: true,
@@ -117,9 +141,17 @@ function parseApiResponseText<T>(
   statusCode: number,
   contentType: string | null | undefined,
   fallbackMessage: string,
+  options?: ResolveApiResponseOptions<T>,
 ) {
   const text = rawText.trim();
   if (!text) {
+    if (options?.allowEmptySuccess && isSuccessfulStatus(statusCode)) {
+      return {
+        payload: createEmptySuccessResponse(options.emptyData),
+        unexpected: false,
+      };
+    }
+
     return {
       payload: createFallbackResponse<T>(statusCode, fallbackMessage),
       unexpected: true,
@@ -142,7 +174,7 @@ function parseApiResponseText<T>(
   }
 
   try {
-    return normalizeApiResponse<T>(JSON.parse(text), statusCode, fallbackMessage);
+    return normalizeApiResponse<T>(JSON.parse(text), statusCode, fallbackMessage, options);
   } catch {
     return {
       payload: createFallbackResponse<T>(statusCode, fallbackMessage),
@@ -185,8 +217,16 @@ export function resolveApiResponse<T>(
   statusCode: number,
   fallbackMessage: string,
   contentType?: string | null,
+  options?: ResolveApiResponseOptions<T>,
 ) {
   if (data === null || data === undefined) {
+    if (options?.allowEmptySuccess && isSuccessfulStatus(statusCode)) {
+      return {
+        payload: createEmptySuccessResponse(options.emptyData),
+        unexpected: false,
+      };
+    }
+
     return {
       payload: createFallbackResponse<T>(statusCode, fallbackMessage),
       unexpected: true,
@@ -195,15 +235,22 @@ export function resolveApiResponse<T>(
   }
 
   if (typeof data === "string") {
-    return parseApiResponseText<T>(data, statusCode, contentType, fallbackMessage);
+    return parseApiResponseText<T>(
+      data,
+      statusCode,
+      contentType,
+      fallbackMessage,
+      options,
+    );
   }
 
-  return normalizeApiResponse<T>(data, statusCode, fallbackMessage);
+  return normalizeApiResponse<T>(data, statusCode, fallbackMessage, options);
 }
 
 export function resolveApiResponseFromAxios<T>(
   response: AxiosResponse<unknown>,
   fallbackMessage: string,
+  options?: ResolveApiResponseOptions<T>,
 ) {
   const contentType =
     typeof response.headers?.["content-type"] === "string"
@@ -215,6 +262,7 @@ export function resolveApiResponseFromAxios<T>(
     response.status,
     fallbackMessage,
     contentType,
+    options,
   );
 }
 
@@ -222,7 +270,7 @@ export function logUnexpectedApiResponse(
   response: AxiosResponse<unknown>,
   reason: UnexpectedApiResponseReason | undefined,
 ) {
-  console.error("Unexpected backend response", {
+  console.warn("Unexpected backend response", {
     path: response.config.url,
     status: response.status,
     contentType: response.headers?.["content-type"],
@@ -233,10 +281,12 @@ export function logUnexpectedApiResponse(
 export function unwrapApiResponse<T>(
   response: AxiosResponse<unknown>,
   fallbackMessage: string,
+  options?: ResolveApiResponseOptions<T>,
 ) {
   const { payload, unexpected, reason } = resolveApiResponseFromAxios<T>(
     response,
     fallbackMessage,
+    options,
   );
 
   if (unexpected) {

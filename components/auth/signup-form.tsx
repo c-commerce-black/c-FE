@@ -65,6 +65,7 @@ export function SignupForm() {
         email,
         password,
         shopName: shopName.trim() || undefined,
+        agreements: selectedAgreements,
       })
       .then((data) => {
         setSuccess("회원가입이 완료되었습니다.");

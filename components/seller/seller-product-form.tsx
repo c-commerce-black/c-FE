@@ -1,18 +1,25 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Camera } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
+import { Camera, LoaderCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-import { Button } from "@/components/shared/ui";
-import { Card } from "@/components/shared/ui";
-import { Input } from "@/components/shared/ui";
-import { Textarea } from "@/components/shared/ui";
-import { getApiErrorMessage } from "@/lib/shared/api";
-import { useCreateSellerProductMutation } from "@/hooks/api";
+import { Button, Card, Input, Textarea } from "@/components/shared/ui";
+import { useCreateSellerProductMutation, useImageUploadMutation, useUpdateSellerProductMutation } from "@/hooks/api";
 import { CATEGORY_LABELS } from "@/lib/catalog";
+import { getApiErrorMessage } from "@/lib/shared/api";
 
 const categoryOptions = Object.entries(CATEGORY_LABELS);
+
+export type SellerProductFormValues = {
+  name: string;
+  description: string;
+  category: string;
+  originalPrice: string;
+  stock: string;
+  expiryDate: string;
+  imageUrl: string;
+};
 
 function formatPreviewPrice(value: string, label: string) {
   const base = Number(value || 18000);
@@ -20,19 +27,32 @@ function formatPreviewPrice(value: string, label: string) {
   return `${Math.round(base * discount).toLocaleString("ko-KR")}원`;
 }
 
-export function SellerProductForm() {
+export function SellerProductForm({
+  mode = "create",
+  productId,
+  initialValues,
+}: {
+  mode?: "create" | "edit";
+  productId?: string;
+  initialValues?: Partial<SellerProductFormValues>;
+}) {
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const createProductMutation = useCreateSellerProductMutation();
+  const updateProductMutation = useUpdateSellerProductMutation();
+  const imageUploadMutation = useImageUploadMutation();
   const [error, setError] = useState<string | null>(null);
-  const [filePreview, setFilePreview] = useState<string | null>(null);
-  const [values, setValues] = useState({
-    name: "",
-    category: "FOOD",
-    originalPrice: "",
-    stock: "",
-    expiryDate: "",
-    description: "",
-    imageUrl: "",
+  const [filePreview, setFilePreview] = useState<string | null>(
+    initialValues?.imageUrl || null,
+  );
+  const [values, setValues] = useState<SellerProductFormValues>({
+    name: initialValues?.name ?? "",
+    category: initialValues?.category ?? "FOOD",
+    originalPrice: initialValues?.originalPrice ?? "",
+    stock: initialValues?.stock ?? "",
+    expiryDate: initialValues?.expiryDate ?? "",
+    description: initialValues?.description ?? "",
+    imageUrl: initialValues?.imageUrl ?? "",
   });
 
   const steps = useMemo(
@@ -44,35 +64,82 @@ export function SellerProductForm() {
     [],
   );
 
-  function updateField(field: keyof typeof values, value: string) {
+  const submitting = createProductMutation.isPending || updateProductMutation.isPending;
+  const uploading = imageUploadMutation.isPending;
+
+  function updateField(field: keyof SellerProductFormValues, value: string) {
     setValues((current) => ({ ...current, [field]: value }));
   }
 
   function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
-    void createProductMutation
-      .mutateAsync({
-        name: values.name,
-        category: values.category,
-        originalPrice: Number(values.originalPrice),
-        stock: Number(values.stock),
-        expiryDate: values.expiryDate,
-        description: values.description,
-        imageUrl: values.imageUrl || undefined,
-      })
+
+    const payload = {
+      name: values.name,
+      description: values.description,
+      category: values.category,
+      originalPrice: Number(values.originalPrice),
+      stock: Number(values.stock),
+      expiryDate: values.expiryDate,
+      imageUrl: values.imageUrl || undefined,
+    };
+
+    const request =
+      mode === "edit" && productId
+        ? updateProductMutation.mutateAsync({
+            id: productId,
+            ...payload,
+          })
+        : createProductMutation.mutateAsync(payload);
+
+    void request
       .then(() => {
         router.push("/seller");
         router.refresh();
       })
-      .catch((error) => {
-        setError(getApiErrorMessage(error, "상품 등록에 실패했습니다."));
+      .catch((requestError) => {
+        setError(
+          getApiErrorMessage(
+            requestError,
+            mode === "edit" ? "상품 수정에 실패했습니다." : "상품 등록에 실패했습니다.",
+          ),
+        );
+      });
+  }
+
+  function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setError(null);
+    setFilePreview(URL.createObjectURL(file));
+
+    void imageUploadMutation
+      .mutateAsync({ file })
+      .then(({ imageUrl }) => {
+        updateField("imageUrl", imageUrl);
+      })
+      .catch((uploadError) => {
+        setError(getApiErrorMessage(uploadError, "이미지 업로드에 실패했습니다."));
       });
   }
 
   return (
     <form className="grid gap-5" onSubmit={onSubmit}>
       <section className="space-y-4">
+        <div>
+          <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-brand-secondary">
+            {mode === "edit" ? "Edit product" : "New product"}
+          </p>
+          <h1 className="mt-2 text-[24px] font-black tracking-[-0.05em] text-foreground">
+            {mode === "edit" ? "상품 수정" : "상품 등록"}
+          </h1>
+          <p className="mt-2 text-[14px] leading-6 text-text-secondary">
+            스웨거 명세에 맞는 상품 정보를 입력하면 셀러 목록과 구매자 화면에 바로 반영됩니다.
+          </p>
+        </div>
+
         <Input
           label="상품명"
           placeholder="상품명"
@@ -97,14 +164,14 @@ export function SellerProductForm() {
           <Input
             label="정가"
             type="number"
-            placeholder="18,000원"
+            placeholder="18000"
             value={values.originalPrice}
             onChange={(event) => updateField("originalPrice", event.target.value)}
           />
           <Input
             label="재고"
             type="number"
-            placeholder="120개"
+            placeholder="120"
             value={values.stock}
             onChange={(event) => updateField("stock", event.target.value)}
           />
@@ -124,40 +191,49 @@ export function SellerProductForm() {
           hint="상세 페이지와 주문 화면에 함께 노출됩니다."
         />
 
-        <label className="flex min-h-40 cursor-pointer flex-col items-center justify-center rounded-[18px] border border-dashed border-border-strong bg-white px-6 text-center">
-          {filePreview ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={filePreview}
-              alt="선택한 이미지 미리보기"
-              className="h-40 w-full rounded-[14px] object-cover"
-            />
-          ) : (
-            <>
-              <div className="flex size-12 items-center justify-center rounded-[14px] bg-[#eef7ff] text-[#68b4f0]">
-                <Camera className="size-6" />
-              </div>
-              <p className="mt-4 text-[18px] font-black tracking-[-0.04em] text-foreground">
-                이미지 업로드
-              </p>
-              <p className="mt-1 text-[13px] text-text-secondary">
-                JPG, PNG · 최대 10MB
-              </p>
-            </>
-          )}
+        <label className="block">
+          <span className="mb-2 block text-sm font-semibold text-foreground">상품 이미지</span>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="flex min-h-40 w-full cursor-pointer flex-col items-center justify-center rounded-[18px] border border-dashed border-border-strong bg-white px-6 text-center"
+          >
+            {filePreview ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={filePreview}
+                alt="선택한 이미지 미리보기"
+                className="h-40 w-full rounded-[14px] object-cover"
+              />
+            ) : (
+              <>
+                <div className="flex size-12 items-center justify-center rounded-[14px] bg-[#eef7ff] text-[#68b4f0]">
+                  <Camera className="size-6" />
+                </div>
+                <p className="mt-4 text-[18px] font-black tracking-[-0.04em] text-foreground">
+                  이미지 업로드
+                </p>
+                <p className="mt-1 text-[13px] text-text-secondary">
+                  JPG, PNG · 최대 10MB
+                </p>
+              </>
+            )}
+            <span className="mt-3 inline-flex items-center gap-2 text-[12px] text-text-secondary">
+              {uploading ? <LoaderCircle className="size-3.5 animate-spin" /> : null}
+              {uploading
+                ? "업로드 중..."
+                : values.imageUrl
+                  ? "업로드가 완료되었습니다. 이미지를 다시 누르면 교체됩니다."
+                  : "선택 즉시 업로드됩니다."}
+            </span>
+          </button>
           <input
+            ref={fileInputRef}
             type="file"
             accept="image/*"
             className="hidden"
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              if (!file) return;
-              setFilePreview(URL.createObjectURL(file));
-            }}
+            onChange={handleFileChange}
           />
-          <span className="mt-3 text-[12px] text-text-secondary">
-            업로드 API 연동 전까지는 미리보기만 지원됩니다.
-          </span>
         </label>
       </section>
 
@@ -183,14 +259,30 @@ export function SellerProductForm() {
           </div>
         </Card>
         {error ? <p className="text-sm text-urgent">{error}</p> : null}
-        <Button
-          type="submit"
-          size="lg"
-          className="w-full"
-          disabled={createProductMutation.isPending}
-        >
-          {createProductMutation.isPending ? "등록 중..." : "등록하기"}
-        </Button>
+        <div className="flex gap-3">
+          <Button
+            type="submit"
+            size="lg"
+            className="flex-1"
+            disabled={submitting || uploading}
+          >
+            {submitting
+              ? mode === "edit"
+                ? "수정 중..."
+                : "등록 중..."
+              : mode === "edit"
+                ? "수정 저장"
+                : "등록하기"}
+          </Button>
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={() => router.push("/seller")}
+            disabled={submitting}
+          >
+            취소
+          </Button>
+        </div>
       </section>
     </form>
   );

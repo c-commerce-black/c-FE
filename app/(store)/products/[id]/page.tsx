@@ -2,21 +2,33 @@ import type { Metadata } from "next";
 import { cache } from "react";
 import { notFound } from "next/navigation";
 
-import { PriceHistoryChart } from "@/components/catalog";
-import { ProductDetailActions } from "@/components/catalog";
-import {
-  CATEGORY_LABELS,
-  getRemainSeconds,
-} from "@/lib/catalog";
-import { getProductDetail } from "@/lib/catalog/service";
-import { formatCurrency, serializeJson } from "@/lib/shared/utils";
+import { ProductDetailPageClient } from "@/components/catalog";
+import { CATEGORY_LABELS } from "@/lib/catalog";
+import { normalizeProductDetailData } from "@/lib/catalog/service";
+import { resolveApiResponseFromAxios } from "@/lib/shared/api";
+import { backendApi } from "@/lib/shared/api/backend";
+import { formatCurrency } from "@/lib/shared/utils";
 
 const getProduct = cache(async (id: string) => {
-  try {
-    return await getProductDetail(id);
-  } catch {
-    return null;
+  const response = await backendApi.get(`/api/products/${id}`, {
+    validateStatus: () => true,
+  });
+  const { payload } = resolveApiResponseFromAxios<unknown>(
+    response,
+    "상품 정보를 불러오지 못했습니다.",
+  );
+
+  if (!payload.success) {
+    return {
+      status: response.status,
+      data: null,
+    };
   }
+
+  return {
+    status: response.status,
+    data: normalizeProductDetailData(payload.data),
+  };
 });
 
 type Params = Promise<{ id: string }>;
@@ -27,14 +39,14 @@ export async function generateMetadata({
   params: Params;
 }): Promise<Metadata> {
   const { id } = await params;
-  const data = await getProduct(id);
-  if (!data?.product) {
+  const productResponse = await getProduct(id);
+  if (!productResponse.data?.product) {
     return {
       title: "상품을 찾을 수 없습니다",
     };
   }
 
-  const product = data.product;
+  const product = productResponse.data.product;
 
   return {
     title: product.name,
@@ -56,58 +68,11 @@ export default async function ProductDetailPage({
   params: Params;
 }) {
   const { id } = await params;
-  const data = await getProduct(id);
-  if (!data?.product) notFound();
+  const productResponse = await getProduct(id);
 
-  const product = data.product;
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    name: product.name,
-    description: product.description ?? product.name,
-    category: CATEGORY_LABELS[product.category],
-    image: product.imageUrl ? [product.imageUrl] : undefined,
-    offers: {
-      "@type": "Offer",
-      priceCurrency: "KRW",
-      price: product.currentPrice,
-      availability:
-        product.status === "SOLD_OUT"
-          ? "https://schema.org/OutOfStock"
-          : "https://schema.org/InStock",
-    },
-  };
+  if (productResponse.status === 404) {
+    notFound();
+  }
 
-  return (
-    <div className="cc-grid space-y-6 py-5">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: serializeJson(jsonLd) }}
-      />
-      <section className="space-y-4 pt-1">
-        <div className="border-b border-border pb-4">
-          <p className="text-[14px] text-[#a0aaba]">C-commerce 마켓</p>
-          <h1 className="mt-2 text-[20px] font-black tracking-[-0.04em] text-foreground">
-            {product.name}
-          </h1>
-          <div className="mt-3 flex items-end gap-2">
-            <p className="text-[30px] leading-none font-black tracking-[-0.06em] text-foreground">
-              {formatCurrency(product.currentPrice)}
-            </p>
-            <p className="pb-0.5 text-[14px] text-[#9ca6b6] line-through">
-              {formatCurrency(product.originalPrice)}
-            </p>
-            <p className="pb-0.5 text-[14px] font-bold text-brand-primary">
-              {product.discountRate}% ↓
-            </p>
-          </div>
-        </div>
-        <PriceHistoryChart points={product.priceHistory ?? []} />
-        <ProductDetailActions
-          product={product}
-          initialRemainSeconds={getRemainSeconds(product.expiryDate)}
-        />
-      </section>
-    </div>
-  );
+  return <ProductDetailPageClient productId={id} />;
 }

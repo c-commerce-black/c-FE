@@ -170,6 +170,23 @@ describe("api error helpers", () => {
     });
   });
 
+  it("allows empty successful responses when explicitly enabled", () => {
+    expect(
+      unwrapApiResponse<{ message?: string }>(
+        createAxiosResponse({
+          data: {},
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+        "삭제에 실패했습니다.",
+        {
+          allowEmptySuccess: true,
+          emptyData: {},
+        },
+      ),
+    ).toEqual({});
+  });
+
   it("injects authorization headers when a token is provided", async () => {
     let capturedHeaders: unknown;
     const instance = createApiInstance({

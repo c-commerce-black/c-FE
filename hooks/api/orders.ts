@@ -12,6 +12,10 @@ export function useCancelOrderMutation() {
       return unwrapApiResponse<{ message?: string }>(
         response,
         "주문 취소에 실패했습니다.",
+        {
+          allowEmptySuccess: true,
+          emptyData: {},
+        },
       );
     },
   });
@@ -32,6 +36,12 @@ export function useUpdateOrderStatusMutation() {
       return unwrapApiResponse<{ order: { status: OrderStatus } }>(
         response,
         "주문 상태 변경에 실패했습니다.",
+        {
+          allowEmptySuccess: true,
+          emptyData: {
+            order: { status },
+          },
+        },
       );
     },
   });

@@ -12,6 +12,11 @@ function normalizeVercelUrl(value: string | undefined) {
   return `https://${trimmed}`;
 }
 
+function readConfiguredUrl(...values: Array<string | undefined>) {
+  const value = values.find((candidate) => candidate?.trim())?.trim();
+  return value || undefined;
+}
+
 function readUrlEnv(name: keyof typeof DEFAULT_DEV_URLS) {
   const value =
     process.env[name]?.trim() ||
@@ -29,14 +34,13 @@ function readUrlEnv(name: keyof typeof DEFAULT_DEV_URLS) {
 
 function readSiteUrl() {
   const value =
-    (!isProduction ? DEFAULT_DEV_SITE_URL : undefined) ||
+    readConfiguredUrl(process.env.NEXT_PUBLIC_SITE_URL, process.env.SITE_URL) ||
     normalizeVercelUrl(process.env.VERCEL_PROJECT_PRODUCTION_URL) ||
-    normalizeVercelUrl(process.env.VERCEL_URL);
+    normalizeVercelUrl(process.env.VERCEL_URL) ||
+    (!isProduction ? DEFAULT_DEV_SITE_URL : undefined);
 
   if (!value) {
-    throw new Error(
-      "Missing required site URL source: expected VERCEL_PROJECT_PRODUCTION_URL or VERCEL_URL",
-    );
+    throw new Error("Missing required site URL source");
   }
 
   try {

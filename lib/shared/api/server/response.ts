@@ -69,6 +69,37 @@ export async function proxyJson({
   });
 }
 
+export async function proxyMultipart({
+  path,
+  formData,
+  auth = false,
+  fallbackMessage,
+}: {
+  path: string;
+  formData: FormData;
+  auth?: boolean;
+  fallbackMessage?: string;
+}) {
+  const token = auth ? await getSessionTokenFromCookies() : null;
+  const response = await backendApi.request({
+    url: path,
+    method: "POST",
+    data: formData,
+    token,
+    validateStatus: () => true,
+  });
+  const { payload } = resolveApiResponseFromAxios(
+    response,
+    fallbackMessage ?? "응답을 처리할 수 없습니다.",
+  );
+
+  return jsonApiResponse({
+    status: response.status,
+    payload,
+    fallbackMessage: "응답을 처리할 수 없습니다.",
+  });
+}
+
 export function jsonError(message: string, status = 500) {
   return NextResponse.json(
     {

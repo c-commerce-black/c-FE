@@ -2,11 +2,16 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
+import { Trash2 } from "lucide-react";
 
 import { Card } from "@/components/shared/ui";
 import { Toggle } from "@/components/shared/ui";
 import { getApiErrorMessage } from "@/lib/shared/api";
-import { useCreateAlertMutation, useToggleAlertMutation } from "@/hooks/api";
+import {
+  useCreateAlertMutation,
+  useDeleteAlertMutation,
+  useToggleAlertMutation,
+} from "@/hooks/api";
 import type { AlertItem } from "@/lib/alerts";
 import { formatRemainTime } from "@/lib/catalog";
 import { formatCurrency } from "@/lib/shared/utils";
@@ -14,9 +19,11 @@ import { formatCurrency } from "@/lib/shared/utils";
 function AlertRow({
   item,
   onToggle,
+  onDelete,
 }: {
   item: AlertItem;
   onToggle: (item: AlertItem) => void;
+  onDelete: (item: AlertItem) => void;
 }) {
   const urgent = item.product.remainSeconds <= 86400;
 
@@ -40,7 +47,17 @@ function AlertRow({
             현재가 {formatCurrency(item.product.currentPrice)}
           </p>
         </Link>
-        <div className="shrink-0">
+        <div className="flex shrink-0 items-center gap-2">
+          {item.alertId ? (
+            <button
+              type="button"
+              onClick={() => onDelete(item)}
+              className="inline-flex size-8 items-center justify-center rounded-full border border-border bg-white text-text-secondary"
+              aria-label="알림 삭제"
+            >
+              <Trash2 className="size-4" />
+            </button>
+          ) : null}
           <Toggle checked={item.isOn} onCheckedChange={() => onToggle(item)} />
         </div>
       </div>
@@ -60,6 +77,7 @@ export function AlertsClient({
   const [todayDeals, setTodayDeals] = useState(initialTodayDeals);
   const [feedback, setFeedback] = useState<string | null>(null);
   const createAlertMutation = useCreateAlertMutation();
+  const deleteAlertMutation = useDeleteAlertMutation();
   const toggleAlertMutation = useToggleAlertMutation();
 
   function updateCollections(nextItem: AlertItem) {
@@ -113,6 +131,32 @@ export function AlertsClient({
     });
   }
 
+  function handleDelete(item: AlertItem) {
+    const alertId = item.alertId;
+    if (!alertId) return;
+
+    startTransition(async () => {
+      setFeedback(null);
+
+      try {
+        await deleteAlertMutation.mutateAsync({
+          alertId,
+        });
+
+        setWishAlerts((current) =>
+          current.filter((entry) => entry.alertId !== alertId),
+        );
+        updateCollections({
+          ...item,
+          alertId: null,
+          isOn: false,
+        });
+      } catch (error) {
+        setFeedback(getApiErrorMessage(error, "알림 해제에 실패했습니다."));
+      }
+    });
+  }
+
   return (
     <div className="space-y-7">
       <section className="space-y-3">
@@ -127,6 +171,7 @@ export function AlertsClient({
                 key={item.alertId ?? item.product.id}
                 item={item}
                 onToggle={handleToggle}
+                onDelete={handleDelete}
               />
             ))
           ) : (
@@ -153,6 +198,7 @@ export function AlertsClient({
                 key={`${item.product.id}-${item.alertId ?? "today"}`}
                 item={item}
                 onToggle={handleToggle}
+                onDelete={handleDelete}
               />
             ))
           ) : (
@@ -167,6 +213,7 @@ export function AlertsClient({
         <p className="text-[13px] text-text-secondary">{feedback}</p>
       ) : pending ||
         createAlertMutation.isPending ||
+        deleteAlertMutation.isPending ||
         toggleAlertMutation.isPending ? (
         <p className="text-[13px] text-text-secondary">변경 사항을 반영하는 중입니다.</p>
       ) : null}
