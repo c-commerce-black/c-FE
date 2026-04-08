@@ -1,23 +1,57 @@
-import { formatCurrency } from "@/lib/shared/utils";
+"use client";
+
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  Filler,
+  Legend,
+  LineElement,
+  LinearScale,
+  PointElement,
+  Tooltip,
+  type ChartData,
+  type ChartOptions,
+} from "chart.js";
+import { Line } from "react-chartjs-2";
+
 import type { PricePoint } from "@/lib/catalog";
+import { formatCurrency } from "@/lib/shared/utils";
 
-function buildPath(points: PricePoint[]) {
-  if (points.length === 0) return "";
-  const max = Math.max(...points.map((point) => point.price));
-  const min = Math.min(...points.map((point) => point.price));
-  const range = Math.max(max - min, 1);
+import { preparePriceHistoryChart } from "./price-history-chart.helpers";
 
-  return points
-    .map((point, index) => {
-      const x = (index / Math.max(points.length - 1, 1)) * 100;
-      const y = 100 - ((point.price - min) / range) * 70 - 10;
-      return `${index === 0 ? "M" : "L"} ${x} ${y}`;
-    })
-    .join(" ");
-}
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Tooltip,
+  Filler,
+  Legend,
+);
 
-export function PriceHistoryChart({ points }: { points: PricePoint[] }) {
-  if (!points.length) {
+export function PriceHistoryChart({
+  points,
+  currentPrice,
+  currentDDay,
+  originalPrice,
+}: {
+  points: PricePoint[];
+  currentPrice?: number;
+  currentDDay?: number;
+  originalPrice?: number;
+}) {
+  const prepared = preparePriceHistoryChart(
+    points,
+    currentPrice && typeof currentDDay === "number"
+      ? {
+          dDay: currentDDay,
+          price: currentPrice,
+        }
+      : null,
+    originalPrice,
+  );
+
+  if (!prepared.points.length || !prepared.currentPoint || !prepared.canRenderChart) {
     return (
       <div className="rounded-[16px] border border-border bg-white px-6 py-10 text-center text-sm text-text-secondary">
         아직 가격 변동 이력이 없습니다.
@@ -25,71 +59,129 @@ export function PriceHistoryChart({ points }: { points: PricePoint[] }) {
     );
   }
 
-  const linePath = buildPath(points);
-  const areaPath = `${linePath} L 100 100 L 0 100 Z`;
-  const last = points[points.length - 1];
-  const first = points[0];
-  const delta = first.price > 0 ? Math.round(((first.price - last.price) / first.price) * 100) : 0;
+  const pointBackgroundColor = prepared.points.map((_, index) =>
+    index === prepared.currentIndex ? "#0f9f9f" : "#ffffff",
+  );
+  const pointBorderColor = prepared.points.map(() => "#ff5ca8");
+  const pointRadius = prepared.points.map((_, index) =>
+    index === prepared.currentIndex ? 5 : 4,
+  );
+  const pointHoverRadius = prepared.points.map((_, index) =>
+    index === prepared.currentIndex ? 6 : 5,
+  );
+
+  const data: ChartData<"line"> = {
+    labels: prepared.labels,
+    datasets: [
+      {
+        data: prepared.prices,
+        borderColor: "#ff5ca8",
+        backgroundColor: "rgba(255, 92, 168, 0.08)",
+        borderWidth: 3,
+        tension: 0.2,
+        fill: false,
+        pointBackgroundColor,
+        pointBorderColor,
+        pointBorderWidth: 2,
+        pointRadius,
+        pointHoverRadius,
+      },
+    ],
+  };
+
+  const options: ChartOptions<"line"> = {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: false,
+    plugins: {
+      legend: {
+        display: false,
+      },
+      tooltip: {
+        displayColors: false,
+        backgroundColor: "#101828",
+        callbacks: {
+          title: (items) => items[0]?.label ?? "",
+          label: (context) => formatCurrency(Number(context.parsed.y ?? 0)),
+        },
+      },
+    },
+    scales: {
+      x: {
+        border: {
+          display: false,
+        },
+        grid: {
+          color: "rgba(148, 163, 184, 0.18)",
+          drawTicks: false,
+        },
+        ticks: {
+          color: "#7c8aa5",
+          font: {
+            size: 11,
+            weight: 600,
+          },
+        },
+      },
+      y: {
+        border: {
+          display: false,
+        },
+        grid: {
+          color: "rgba(148, 163, 184, 0.18)",
+          drawTicks: false,
+        },
+        ticks: {
+          display: false,
+        },
+      },
+    },
+  };
+
+  const summaryTone =
+    prepared.trend === "up"
+      ? "text-[#ff8a00]"
+      : prepared.trend === "down"
+        ? "text-brand-primary"
+        : "text-text-secondary";
+  const comparisonPoint =
+    prepared.points.length <= 1
+      ? prepared.currentPoint
+      : prepared.currentIndex === 0
+        ? prepared.lastPoint
+        : prepared.firstPoint;
+  const comparisonLabel =
+    prepared.currentIndex === 0 ? "마감" : "시작";
+  const summaryText =
+    prepared.trend === "flat"
+      ? "변동 없음"
+      : `${prepared.trend === "down" ? "↓" : "↑"} ${prepared.changeRate}%`;
 
   return (
     <div className="space-y-3">
       <h3 className="text-[16px] font-bold tracking-[-0.03em] text-foreground">
         가격 변동 추이
       </h3>
-      <div className="rounded-[16px] border border-border bg-white px-4 py-4">
-        <svg viewBox="0 0 100 100" className="h-[120px] w-full overflow-visible">
-        <defs>
-          <linearGradient id="price-fill" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="rgba(255,105,180,0.28)" />
-            <stop offset="100%" stopColor="rgba(255,105,180,0.03)" />
-          </linearGradient>
-        </defs>
-        <path d={areaPath} fill="url(#price-fill)" />
-        <path
-          d={linePath}
-          fill="none"
-          stroke="#ff69b4"
-          strokeWidth={3}
-          strokeLinejoin="round"
-          strokeLinecap="round"
-        />
-        {points.map((point, index) => {
-          const max = Math.max(...points.map((entry) => entry.price));
-          const min = Math.min(...points.map((entry) => entry.price));
-          const range = Math.max(max - min, 1);
-          const x = (index / Math.max(points.length - 1, 1)) * 100;
-          const y = 100 - ((point.price - min) / range) * 70 - 10;
-          return (
-            <g key={`${point.dDay}-${point.price}`}>
-              <circle
-                cx={x}
-                cy={y}
-                r={index === points.length - 1 ? 2.8 : 2}
-                fill={index === points.length - 1 ? "#069494" : "#ffffff"}
-                stroke="#ff69b4"
-                strokeWidth={1.8}
-              />
-              <text
-                x={x}
-                y={98}
-                textAnchor="middle"
-                fontSize="5"
-                fill="#667085"
-              >
-                D-{point.dDay}
-              </text>
-            </g>
-          );
-        })}
-        </svg>
-        <div className="mt-1 flex items-center justify-between text-[11px]">
-          <span className="text-text-tertiary">
-            2주 전 {formatCurrency(first.price)}
-          </span>
-          <span className="font-bold text-brand-primary">
-            현재 {formatCurrency(last.price)} ↓ {delta}%
-          </span>
+      <div className="rounded-[20px] border border-border bg-white px-4 py-4">
+        <div className="h-[220px]">
+          <Line data={data} options={options} />
         </div>
+        {prepared.isValid ? (
+          <div className="mt-3 flex items-center justify-between gap-3 text-[12px]">
+            <span className="text-text-tertiary">
+              현재 D-{prepared.currentPoint.dDay} · {formatCurrency(prepared.currentPoint.price)}
+            </span>
+            <span className={`font-bold ${summaryTone}`}>
+              {comparisonPoint && comparisonPoint.dDay !== prepared.currentPoint.dDay
+                ? `${comparisonLabel} D-${comparisonPoint.dDay} · ${formatCurrency(comparisonPoint.price)} ${summaryText}`
+                : `현재 ${formatCurrency(prepared.currentPoint.price)} ${summaryText}`}
+            </span>
+          </div>
+        ) : (
+          <p className="mt-3 text-center text-[12px] text-text-secondary">
+            가격 변동 데이터를 확인 중입니다.
+          </p>
+        )}
       </div>
     </div>
   );

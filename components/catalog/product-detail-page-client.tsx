@@ -136,7 +136,12 @@ export function ProductDetailPageClient({
             </p>
           </div>
         </div>
-        <PriceHistoryChart points={product.priceHistory ?? []} />
+        <PriceHistoryChart
+          points={product.priceHistory ?? []}
+          currentPrice={product.currentPrice}
+          currentDDay={product.dDay}
+          originalPrice={product.originalPrice}
+        />
         <ProductDetailActions
           product={product}
           initialRemainSeconds={getRemainSeconds(product.expiryDate)}
