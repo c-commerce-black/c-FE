@@ -245,7 +245,7 @@ export function CartClient({ initialCart }: { initialCart: CartState }) {
           {items.map((item) => {
             return (
               <Card key={getCartItemId(item)} className="p-4">
-                <div className="flex items-center gap-3">
+                <div className="flex items-start gap-3">
                   <div className="flex size-16 items-center justify-center rounded-[14px] bg-[linear-gradient(135deg,_#eefdf3,_#f8fffb)]">
                     <div className="size-7 rounded-full bg-[#b4f2c6]" />
                   </div>
@@ -256,15 +256,15 @@ export function CartClient({ initialCart }: { initialCart: CartState }) {
                     >
                       {item.product.name}
                     </Link>
-                    <div className="mt-2 flex items-center gap-2">
-                      <span className="rounded-full bg-[#fff0f2] px-2 py-1 text-[12px] font-bold text-[#ff5f7e]">
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <span className="min-w-[54px] shrink-0 whitespace-nowrap rounded-full bg-[#fff0f2] px-2 py-1 text-center text-[12px] font-bold text-[#ff5f7e]">
                         D-{item.product.dDay ?? 0}
                       </span>
-                      <span className="text-[16px] font-black text-brand-primary">
+                      <span className="whitespace-nowrap text-[16px] font-black text-brand-primary">
                         {formatCurrency(item.product.currentPrice)}
                       </span>
                     </div>
-                    <div className="mt-2 flex items-center gap-2 text-[12px] font-bold">
+                    <div className="mt-2 flex flex-wrap items-center gap-2 text-[12px] font-bold">
                       {item.product.stock !== null ? (
                         <span
                           className={
@@ -285,7 +285,7 @@ export function CartClient({ initialCart }: { initialCart: CartState }) {
                       ) : null}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex shrink-0 items-center gap-2 pt-8">
                     <button
                       type="button"
                       onClick={() =>
