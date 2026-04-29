@@ -3,6 +3,7 @@ import {
   readBoolean,
   readNullableString,
   readNumber,
+  pickFirstValue,
   readRecord,
   readString,
   unwrapApiResponse,
@@ -26,7 +27,24 @@ function normalizeStatus(value: string): ProductStatus {
     : "ON_SALE";
 }
 
-function normalizeCartState(raw: unknown): CartState {
+function readOptionalStock(record: ReturnType<typeof readRecord>) {
+  const stockKeys = [
+    "stock",
+    "inventory",
+    "availableStock",
+    "availableQuantity",
+    "remainingStock",
+    "remainingQuantity",
+  ];
+  const value = pickFirstValue(record, stockKeys);
+  if (value === undefined || value === null) {
+    return null;
+  }
+
+  return Math.max(0, readNumber(record, stockKeys, 0));
+}
+
+export function normalizeCartState(raw: unknown): CartState {
   const record = readRecord(raw) ?? {};
   const items = readArray(record.items ?? record.cartItems).map((entry) => {
     const itemRecord = readRecord(entry) ?? {};
@@ -57,6 +75,7 @@ function normalizeCartState(raw: unknown): CartState {
         imageUrl: readNullableString(productRecord, ["imageUrl", "thumbnailUrl"]),
         dDay: readNumber(productRecord, ["dDay", "dday"], 0),
         discountRate: readNumber(productRecord, ["discountRate", "discountPercent"], 0),
+        stock: readOptionalStock(productRecord),
       },
     };
   });

@@ -14,7 +14,18 @@ import {
   useCreateProductAlertMutation,
 } from "@/hooks/api";
 import type { ProductDetail } from "@/lib/catalog";
-import { formatCurrency } from "@/lib/shared/utils";
+import { cn, formatCurrency } from "@/lib/shared/utils";
+
+type Feedback = {
+  message: string;
+  tone: "error" | "success";
+};
+
+const BLOCKED_PRODUCT_STATUSES = new Set<ProductDetail["status"]>([
+  "SOLD_OUT",
+  "EXPIRED",
+  "DELETED",
+]);
 
 export function ProductDetailActions({
   product,
@@ -24,17 +35,23 @@ export function ProductDetailActions({
   initialRemainSeconds: number;
 }) {
   const router = useRouter();
+  const availableStock = Math.max(0, Math.floor(product.stock));
+  const isPurchasable =
+    availableStock > 0 && !BLOCKED_PRODUCT_STATUSES.has(product.status);
   const [quantity, setQuantity] = useState(1);
   const [wishing, startWish] = useTransition();
   const [submitting, startSubmitting] = useTransition();
-  const [feedback, setFeedback] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [remain, setRemain] = useState(initialRemainSeconds);
   const addToCartMutation = useAddProductToCartMutation();
   const createAlertMutation = useCreateProductAlertMutation();
+  const selectedQuantity = isPurchasable
+    ? Math.min(availableStock, Math.max(1, quantity))
+    : 0;
 
   const total = useMemo(
-    () => product.currentPrice * quantity,
-    [product.currentPrice, quantity],
+    () => product.currentPrice * selectedQuantity,
+    [product.currentPrice, selectedQuantity],
   );
 
   useEffect(() => {
@@ -48,12 +65,28 @@ export function ProductDetailActions({
   }, [initialRemainSeconds, product.id]);
 
   async function handleCart() {
+    if (!isPurchasable) {
+      setFeedback({
+        message: "현재 구매 가능한 수량이 없습니다.",
+        tone: "error",
+      });
+      return;
+    }
+
+    if (selectedQuantity > availableStock) {
+      setFeedback({
+        message: `구매 가능 수량은 ${availableStock}개입니다.`,
+        tone: "error",
+      });
+      return;
+    }
+
     startSubmitting(async () => {
       setFeedback(null);
       try {
         await addToCartMutation.mutateAsync({
           productId: product.id,
-          quantity,
+          quantity: selectedQuantity,
         });
         router.push("/cart");
       } catch (error) {
@@ -61,7 +94,10 @@ export function ProductDetailActions({
           router.push(`/login?next=${encodeURIComponent(`/products/${product.id}`)}`);
           return;
         }
-        setFeedback(getApiErrorMessage(error, "장바구니에 담지 못했습니다."));
+        setFeedback({
+          message: getApiErrorMessage(error, "장바구니에 담지 못했습니다."),
+          tone: "error",
+        });
       }
     });
   }
@@ -73,13 +109,19 @@ export function ProductDetailActions({
         await createAlertMutation.mutateAsync({
           productId: product.id,
         });
-        setFeedback("찜 목록에 추가했습니다.");
+        setFeedback({
+          message: "찜 목록에 추가했습니다.",
+          tone: "success",
+        });
       } catch (error) {
         if (getApiErrorStatus(error) === 401) {
           router.push(`/login?next=${encodeURIComponent(`/products/${product.id}`)}`);
           return;
         }
-        setFeedback(getApiErrorMessage(error, "찜 처리에 실패했습니다."));
+        setFeedback({
+          message: getApiErrorMessage(error, "찜 처리에 실패했습니다."),
+          tone: "error",
+        });
       }
     });
   }
@@ -124,24 +166,41 @@ export function ProductDetailActions({
           <h3 className="text-[16px] font-bold tracking-[-0.03em] text-foreground">
             수량
           </h3>
+          <span
+            className={cn(
+              "rounded-full px-3 py-1 text-[12px] font-black",
+              isPurchasable
+                ? "bg-success/10 text-success"
+                : "bg-urgent/10 text-urgent",
+            )}
+          >
+            {isPurchasable ? `구매 가능 ${availableStock}개` : "구매 불가"}
+          </span>
+        </div>
+        <div className="mb-3 flex items-center justify-between">
+          <p className="text-[13px] font-semibold text-[#505c70]">
+            선택 수량
+          </p>
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => setQuantity((value) => Math.max(1, value - 1))}
-              className="flex size-10 items-center justify-center rounded-[10px] border border-border bg-surface-sunken text-foreground"
+              disabled={!isPurchasable || selectedQuantity <= 1}
+              className="flex size-10 items-center justify-center rounded-[10px] border border-border bg-surface-sunken text-foreground disabled:cursor-not-allowed disabled:opacity-40"
               aria-label="수량 감소"
             >
               <Minus className="size-4" />
             </button>
             <span className="min-w-7 text-center text-[18px] font-black text-foreground">
-              {quantity}
+              {selectedQuantity}
             </span>
             <button
               type="button"
               onClick={() =>
-                setQuantity((value) => Math.min(product.stock || value + 1, value + 1))
+                setQuantity((value) => Math.min(availableStock, value + 1))
               }
-              className="flex size-10 items-center justify-center rounded-[10px] bg-brand-primary text-white"
+              disabled={!isPurchasable || selectedQuantity >= availableStock}
+              className="flex size-10 items-center justify-center rounded-[10px] bg-brand-primary text-white disabled:cursor-not-allowed disabled:opacity-40"
               aria-label="수량 증가"
             >
               <Plus className="size-4" />
@@ -171,12 +230,24 @@ export function ProductDetailActions({
           className="flex-1 rounded-[16px]"
           size="lg"
           onClick={handleCart}
-          disabled={submitting || addToCartMutation.isPending}
+          disabled={!isPurchasable || submitting || addToCartMutation.isPending}
         >
           {submitting || addToCartMutation.isPending ? "담는 중..." : "지금 구매하기"}
         </Button>
       </div>
-      {feedback ? <p className="text-sm text-text-secondary">{feedback}</p> : null}
+      {feedback ? (
+        <p
+          role={feedback.tone === "error" ? "alert" : "status"}
+          className={cn(
+            "rounded-[12px] border px-3 py-2 text-sm font-bold",
+            feedback.tone === "error"
+              ? "border-urgent/25 bg-urgent/10 text-urgent"
+              : "border-success/25 bg-success/10 text-success",
+          )}
+        >
+          {feedback.message}
+        </p>
+      ) : null}
     </div>
   );
 }
