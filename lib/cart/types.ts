@@ -14,7 +14,9 @@ export type CartItem = {
     | "imageUrl"
     | "dDay"
     | "discountRate"
-  >;
+  > & {
+    stock: number | null;
+  };
 };
 
 export type CartSummary = {

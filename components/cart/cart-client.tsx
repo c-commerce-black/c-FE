@@ -19,8 +19,31 @@ import type { CartItem, CartState } from "@/lib/cart";
 import { formatCurrency } from "@/lib/shared/utils";
 import { useCheckoutStore } from "@/stores/checkout-store";
 
+const BLOCKED_PRODUCT_STATUSES = new Set(["SOLD_OUT", "EXPIRED", "DELETED"]);
+
 function getCartItemId(item: CartItem) {
   return item.cartItemId ?? item.id ?? item.product.id;
+}
+
+function hasKnownStockIssue(item: CartItem) {
+  const stock = item.product.stock;
+  return (
+    BLOCKED_PRODUCT_STATUSES.has(item.product.status) ||
+    (stock !== null && (stock <= 0 || item.quantity > stock))
+  );
+}
+
+function getStockFeedback(item: CartItem) {
+  const stock = item.product.stock;
+  if (BLOCKED_PRODUCT_STATUSES.has(item.product.status) || stock === 0) {
+    return `${item.product.name} 상품은 현재 구매할 수 없습니다.`;
+  }
+
+  if (stock !== null && item.quantity > stock) {
+    return `${item.product.name} 구매 가능 수량은 ${stock}개입니다.`;
+  }
+
+  return null;
 }
 
 export function CartClient({ initialCart }: { initialCart: CartState }) {
@@ -72,11 +95,38 @@ export function CartClient({ initialCart }: { initialCart: CartState }) {
   }, [selectedItems]);
 
   function updateQuantity(item: CartItem, quantity: number) {
+    if (
+      BLOCKED_PRODUCT_STATUSES.has(item.product.status) ||
+      item.product.stock === 0
+    ) {
+      setFeedback(
+        getStockFeedback(item) ?? "현재 구매할 수 없는 상품입니다.",
+      );
+      return;
+    }
+
+    const nextQuantity =
+      item.product.stock === null
+        ? Math.max(1, quantity)
+        : Math.min(item.product.stock, Math.max(1, quantity));
+    const stockFeedback =
+      quantity > nextQuantity && quantity > item.quantity
+        ? getStockFeedback({ ...item, quantity })
+        : null;
+    if (stockFeedback) {
+      setFeedback(stockFeedback);
+      return;
+    }
+
+    if (nextQuantity === item.quantity) {
+      return;
+    }
+
     startTransition(async () => {
       setFeedback(null);
       const itemId = getCartItemId(item);
       try {
-        await updateQuantityMutation.mutateAsync({ itemId, quantity });
+        await updateQuantityMutation.mutateAsync({ itemId, quantity: nextQuantity });
       } catch (error) {
         setFeedback(getApiErrorMessage(error, "수량 변경에 실패했습니다."));
         return;
@@ -84,7 +134,7 @@ export function CartClient({ initialCart }: { initialCart: CartState }) {
 
       setItems((current) =>
         current.map((entry) =>
-          getCartItemId(entry) === itemId ? { ...entry, quantity } : entry,
+          getCartItemId(entry) === itemId ? { ...entry, quantity: nextQuantity } : entry,
         ),
       );
     });
@@ -97,6 +147,15 @@ export function CartClient({ initialCart }: { initialCart: CartState }) {
     }
     if (!selectedItems.length) {
       setFeedback("주문할 상품을 선택해 주세요.");
+      return;
+    }
+
+    const stockLimitedItem = selectedItems.find(hasKnownStockIssue);
+    if (stockLimitedItem) {
+      setFeedback(
+        getStockFeedback(stockLimitedItem) ??
+          "구매 가능한 수량을 확인한 뒤 다시 시도해 주세요.",
+      );
       return;
     }
 
@@ -143,6 +202,8 @@ export function CartClient({ initialCart }: { initialCart: CartState }) {
     });
   }
 
+  const hasStockIssue = selectedItems.some(hasKnownStockIssue);
+
   return (
     <div className="relative grid gap-6">
       {showPriceToast ? (
@@ -184,7 +245,7 @@ export function CartClient({ initialCart }: { initialCart: CartState }) {
           {items.map((item) => {
             return (
               <Card key={getCartItemId(item)} className="p-4">
-                <div className="flex items-center gap-3">
+                <div className="flex items-start gap-3">
                   <div className="flex size-16 items-center justify-center rounded-[14px] bg-[linear-gradient(135deg,_#eefdf3,_#f8fffb)]">
                     <div className="size-7 rounded-full bg-[#b4f2c6]" />
                   </div>
@@ -195,22 +256,44 @@ export function CartClient({ initialCart }: { initialCart: CartState }) {
                     >
                       {item.product.name}
                     </Link>
-                    <div className="mt-2 flex items-center gap-2">
-                      <span className="rounded-full bg-[#fff0f2] px-2 py-1 text-[12px] font-bold text-[#ff5f7e]">
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <span className="min-w-[54px] shrink-0 whitespace-nowrap rounded-full bg-[#fff0f2] px-2 py-1 text-center text-[12px] font-bold text-[#ff5f7e]">
                         D-{item.product.dDay ?? 0}
                       </span>
-                      <span className="text-[16px] font-black text-brand-primary">
+                      <span className="whitespace-nowrap text-[16px] font-black text-brand-primary">
                         {formatCurrency(item.product.currentPrice)}
                       </span>
                     </div>
+                    <div className="mt-2 flex flex-wrap items-center gap-2 text-[12px] font-bold">
+                      {item.product.stock !== null ? (
+                        <span
+                          className={
+                            hasKnownStockIssue(item)
+                              ? "text-urgent"
+                              : "text-success"
+                          }
+                        >
+                          구매 가능 {item.product.stock}개
+                        </span>
+                      ) : (
+                        <span className="text-[#505c70]">구매 가능 수량 확인 중</span>
+                      )}
+                      {getStockFeedback(item) ? (
+                        <span role="alert" className="text-urgent">
+                          수량 조정 필요
+                        </span>
+                      ) : null}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex shrink-0 items-center gap-2 pt-8">
                     <button
                       type="button"
                       onClick={() =>
                         updateQuantity(item, Math.max(1, item.quantity - 1))
                       }
-                      className="flex size-8 items-center justify-center rounded-[10px] border border-border bg-surface-sunken text-[#657185]"
+                      disabled={item.quantity <= 1 || pending}
+                      className="flex size-8 items-center justify-center rounded-[10px] border border-border bg-surface-sunken text-[#657185] disabled:cursor-not-allowed disabled:opacity-40"
+                      aria-label="수량 감소"
                     >
                       <Minus className="size-4" />
                     </button>
@@ -220,7 +303,14 @@ export function CartClient({ initialCart }: { initialCart: CartState }) {
                     <button
                       type="button"
                       onClick={() => updateQuantity(item, item.quantity + 1)}
-                      className="flex size-8 items-center justify-center rounded-[10px] border border-[#ffd5ea] bg-white text-brand-primary"
+                      disabled={
+                        pending ||
+                        BLOCKED_PRODUCT_STATUSES.has(item.product.status) ||
+                        (item.product.stock !== null &&
+                          item.quantity >= item.product.stock)
+                      }
+                      className="flex size-8 items-center justify-center rounded-[10px] border border-[#ffd5ea] bg-white text-brand-primary disabled:cursor-not-allowed disabled:opacity-40"
+                      aria-label="수량 증가"
                     >
                       <Plus className="size-4" />
                     </button>
@@ -279,13 +369,26 @@ export function CartClient({ initialCart }: { initialCart: CartState }) {
               deleteCartItemMutation.isPending ||
               clearCartMutation.isPending ||
               createOrderMutation.isPending ||
-              !items.length
+              !items.length ||
+              hasStockIssue
             }
             onClick={() => setShowCheckoutSheet(true)}
           >
             결제하기
           </Button>
-          {feedback ? <p className="text-sm text-text-secondary">{feedback}</p> : null}
+          {hasStockIssue ? (
+            <p role="alert" className="text-sm font-bold text-urgent">
+              구매 가능 수량보다 많이 담긴 상품이 있습니다.
+            </p>
+          ) : null}
+          {feedback ? (
+            <p
+              role="alert"
+              className="rounded-[12px] border border-urgent/25 bg-urgent/10 px-3 py-2 text-sm font-bold text-urgent"
+            >
+              {feedback}
+            </p>
+          ) : null}
         </Card>
       </section>
       {showCheckoutSheet ? (

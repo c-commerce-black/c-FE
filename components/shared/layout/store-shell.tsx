@@ -2,13 +2,21 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, Home, MessageSquare, UserRound, Users } from "lucide-react";
+import {
+  Bell,
+  Home,
+  MessageSquare,
+  ShoppingCart,
+  UserRound,
+  Users,
+} from "lucide-react";
 
 import { cn } from "@/lib/shared/utils";
 
 const navItems = [
   { href: "/", label: "홈", icon: Home },
   { href: "/explore", label: "네트워크", icon: Users },
+  { href: "/cart", label: "장바구니", icon: ShoppingCart },
   { href: "/seller", label: "셀러", icon: MessageSquare },
   { href: "/alerts", label: "알림", icon: Bell },
   { href: "/account", label: "내 프로필", icon: UserRound },

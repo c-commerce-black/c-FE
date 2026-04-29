@@ -13,6 +13,12 @@ function placeholderTone(category: Product["category"]) {
   return "bg-[#f3f6fb] text-[#c7d0de]";
 }
 
+const BLOCKED_PRODUCT_STATUSES = new Set<Product["status"]>([
+  "SOLD_OUT",
+  "EXPIRED",
+  "DELETED",
+]);
+
 export function ProductCard({
   product,
   variant = "default",
@@ -21,6 +27,9 @@ export function ProductCard({
   variant?: "default" | "home";
 }) {
   const home = variant === "home";
+  const purchasableStock = Math.max(0, Math.floor(product.stock));
+  const isPurchasable =
+    purchasableStock > 0 && !BLOCKED_PRODUCT_STATUSES.has(product.status);
 
   return (
     <Link href={`/products/${product.id}`} className="group block">
@@ -75,7 +84,7 @@ export function ProductCard({
                 {formatCurrency(product.originalPrice)}
               </span>
             </div>
-            <div className="mt-3 flex items-center gap-2">
+            <div className="mt-3 flex flex-wrap items-center gap-2">
               <span
                 className={cn(
                   "rounded-full bg-[#fff1f1] font-bold text-[#ff5e6b]",
@@ -91,6 +100,17 @@ export function ProductCard({
                 )}
               >
                 -{product.discountRate}%
+              </span>
+              <span
+                className={cn(
+                  "rounded-full font-bold",
+                  home ? "px-2.5 py-1 text-[11px]" : "px-3 py-1 text-[12px]",
+                  isPurchasable
+                    ? "bg-success/10 text-success"
+                    : "bg-urgent/10 text-urgent",
+                )}
+              >
+                {isPurchasable ? `재고 ${purchasableStock}개` : "품절"}
               </span>
             </div>
           </div>
