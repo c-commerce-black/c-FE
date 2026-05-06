@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 const {
   backendRequest,
@@ -118,13 +118,22 @@ function createDeferred<T>() {
   };
 }
 
-function createCartItem(quantity: number) {
+function createCartItem(
+  quantity: number,
+  options: {
+    cartItemId?: string;
+    productId?: string;
+  } = {},
+) {
+  const cartItemId = options.cartItemId ?? "cart-1";
+  const productId = options.productId ?? "prod-1";
+
   return {
-    cartItemId: "cart-1",
-    id: "cart-1",
+    cartItemId,
+    id: cartItemId,
     quantity,
     product: {
-      id: "prod-1",
+      id: productId,
       name: "샐러드",
       currentPrice: 4500,
       originalPrice: 6000,
@@ -236,6 +245,71 @@ describe("/api/orders route", () => {
         order: {
           id: "order-1",
         },
+      },
+    });
+  });
+
+  it("rejects duplicate cart item ids before forwarding an order", async () => {
+    mockSessionToken("token");
+
+    const response = await POST(
+      createRequest({
+        cartItemIds: ["cart-1", "cart-1"],
+        shippingAddress: "서울시 성동구",
+      }),
+    );
+
+    expect(getCart).not.toHaveBeenCalled();
+    expect(backendRequest).not.toHaveBeenCalled();
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      success: false,
+      error: {
+        message: "같은 장바구니 상품이 중복 선택되었습니다.",
+        statusCode: 400,
+      },
+    });
+  });
+
+  it("validates latest stock against the aggregated quantity for the same product", async () => {
+    mockSessionToken("token");
+    getCart.mockResolvedValue({
+      items: [
+        createCartItem(3, { cartItemId: "cart-1", productId: "prod-1" }),
+        createCartItem(3, { cartItemId: "cart-2", productId: "prod-1" }),
+      ],
+      summary: {
+        totalAmount: 36000,
+        discountAmount: 9000,
+        shippingFee: 2500,
+        finalAmount: 29500,
+      },
+      priceChanged: false,
+    });
+    getProductDetail.mockResolvedValue({
+      product: {
+        id: "prod-1",
+        name: "샐러드",
+        status: "ON_SALE",
+        stock: 5,
+      },
+    });
+
+    const response = await POST(
+      createRequest({
+        cartItemIds: ["cart-1", "cart-2"],
+        shippingAddress: "서울시 성동구",
+      }),
+    );
+
+    expect(getProductDetail).toHaveBeenCalledTimes(1);
+    expect(backendRequest).not.toHaveBeenCalled();
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toEqual({
+      success: false,
+      error: {
+        message: "샐러드 구매 가능 수량은 5개입니다. 장바구니 수량을 조정해 주세요.",
+        statusCode: 409,
       },
     });
   });

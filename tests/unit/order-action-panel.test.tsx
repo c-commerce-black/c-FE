@@ -33,10 +33,23 @@ describe("OrderActionPanel", () => {
   });
 
   it("shows cancel and next status actions for pending orders", () => {
-    render(<OrderActionPanel orderId="order123" status="PENDING" canCancel />);
+    render(
+      <OrderActionPanel
+        orderId="order123"
+        status="PENDING"
+        canCancel
+        canUpdateStatus
+      />,
+    );
 
     expect(screen.getByRole("button", { name: "주문 취소" })).toBeVisible();
     expect(screen.getByRole("button", { name: "준비중로 변경" })).toBeVisible();
+  });
+
+  it("hides seller status actions by default on buyer order pages", () => {
+    render(<OrderActionPanel orderId="order123" status="PREPARING" canCancel={false} />);
+
+    expect(screen.queryByRole("button", { name: "배송중로 변경" })).toBeNull();
   });
 
   it("surfaces backend authorization errors from status changes", async () => {
@@ -55,7 +68,14 @@ describe("OrderActionPanel", () => {
       isAxiosError: true,
     });
 
-    render(<OrderActionPanel orderId="order123" status="PREPARING" canCancel={false} />);
+    render(
+      <OrderActionPanel
+        orderId="order123"
+        status="PREPARING"
+        canCancel={false}
+        canUpdateStatus
+      />,
+    );
 
     await userEvent.click(screen.getByRole("button", { name: "배송중로 변경" }));
 

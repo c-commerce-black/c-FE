@@ -36,14 +36,22 @@ function readCartItemIds(body: unknown) {
   );
 }
 
-function createStockConflictMessage(item: CartItem, product: ProductDetail) {
+function createAggregatedStockConflictMessage({
+  item,
+  product,
+  quantity,
+}: {
+  item: CartItem;
+  product: ProductDetail;
+  quantity: number;
+}) {
   const productName = product.name || item.product.name;
   const stock = Math.max(0, Math.floor(product.stock));
   if (BLOCKED_PRODUCT_STATUSES.has(product.status) || stock <= 0) {
     return `${productName} 상품은 현재 구매할 수 없습니다.`;
   }
 
-  if (item.quantity > stock) {
+  if (quantity > stock) {
     return `${productName} 구매 가능 수량은 ${stock}개입니다.`;
   }
 
@@ -55,6 +63,13 @@ async function resolveSelectedCartItems(body: unknown, token: string) {
   if (!cartItemIds.length) {
     return {
       error: jsonError("주문할 상품을 선택해 주세요.", 400),
+      items: [],
+    };
+  }
+
+  if (new Set(cartItemIds).size !== cartItemIds.length) {
+    return {
+      error: jsonError("같은 장바구니 상품이 중복 선택되었습니다.", 400),
       items: [],
     };
   }
@@ -125,22 +140,40 @@ async function withProductOrderLock<T>(
 
 async function validateLatestStock(items: CartItem[]) {
   try {
-    const products = await Promise.all(
-      items.map(async (item) => {
-        if (!item.product.id) {
-          throw new Error("missing product id");
-        }
+    const groupedItems = new Map<
+      string,
+      {
+        item: CartItem;
+        quantity: number;
+      }
+    >();
 
-        const data = await getProductDetail(item.product.id);
+    items.forEach((item) => {
+      if (!item.product.id) {
+        throw new Error("missing product id");
+      }
+
+      const current = groupedItems.get(item.product.id);
+      groupedItems.set(item.product.id, {
+        item: current?.item ?? item,
+        quantity: (current?.quantity ?? 0) + item.quantity,
+      });
+    });
+
+    const products = await Promise.all(
+      Array.from(groupedItems.entries()).map(async ([productId, group]) => {
+        const data = await getProductDetail(productId);
         return {
-          item,
+          ...group,
           product: data.product,
         };
       }),
     );
 
     const conflict = products
-      .map(({ item, product }) => createStockConflictMessage(item, product))
+      .map(({ item, product, quantity }) =>
+        createAggregatedStockConflictMessage({ item, product, quantity }),
+      )
       .find((message): message is string => Boolean(message));
 
     if (conflict) {
