@@ -12,6 +12,7 @@ export async function GET(request: NextRequest) {
   const category = searchParams.get("category") ?? "";
   const sort = searchParams.get("sort") ?? "expiry_asc";
   const status = (searchParams.get("status") ?? "") as ProductStatus | "";
+  const q = searchParams.get("q") ?? "";
 
   const data = await getProducts({
     page: Number.isNaN(page) ? 1 : page,
@@ -19,6 +20,7 @@ export async function GET(request: NextRequest) {
     category,
     sort,
     status,
+    q,
   });
 
   return NextResponse.json(

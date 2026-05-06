@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
+import type { AxiosResponse } from "axios";
 import { cache } from "react";
-import { notFound } from "next/navigation";
 
 import { ProductDetailPageClient } from "@/components/catalog";
 import { CATEGORY_LABELS } from "@/lib/catalog";
@@ -10,9 +10,18 @@ import { backendApi } from "@/lib/shared/api/backend";
 import { formatCurrency } from "@/lib/shared/utils";
 
 const getProduct = cache(async (id: string) => {
-  const response = await backendApi.get(`/api/products/${id}`, {
-    validateStatus: () => true,
-  });
+  let response: AxiosResponse<unknown>;
+  try {
+    response = await backendApi.get(`/api/products/${id}`, {
+      validateStatus: () => true,
+    });
+  } catch {
+    return {
+      status: 503,
+      data: null,
+    };
+  }
+
   const { payload } = resolveApiResponseFromAxios<unknown>(
     response,
     "상품 정보를 불러오지 못했습니다.",
@@ -68,11 +77,5 @@ export default async function ProductDetailPage({
   params: Params;
 }) {
   const { id } = await params;
-  const productResponse = await getProduct(id);
-
-  if (productResponse.status === 404) {
-    notFound();
-  }
-
   return <ProductDetailPageClient productId={id} />;
 }

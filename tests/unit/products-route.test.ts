@@ -39,6 +39,7 @@ describe("/api/products route", () => {
       category: "",
       sort: "expiry_asc",
       status: "",
+      q: "",
     });
     await expect(response.json()).resolves.toEqual({
       success: true,

@@ -25,6 +25,7 @@ type ProductQueryOptions = {
   category?: string;
   sort?: string;
   status?: ProductStatus | "";
+  q?: string;
 };
 
 const PRODUCT_CATEGORIES: ProductCategory[] = [
@@ -213,6 +214,7 @@ async function getProductsPage({
   category,
   sort = "expiry_asc",
   status,
+  q,
 }: ProductQueryOptions) {
   const response = await backendApi.get("/api/products", {
     params: {
@@ -221,6 +223,7 @@ async function getProductsPage({
       category,
       sort,
       status,
+      q,
     },
   });
 
@@ -251,6 +254,9 @@ export async function getProductFeedPage({
   q = "",
   ...options
 }: ProductQueryOptions & { q?: string }): Promise<ProductFeedPage> {
-  const data = await getProductsPage(options);
+  const data = await getProductsPage({
+    ...options,
+    q,
+  });
   return normalizeProductFeedPage(data, q);
 }
