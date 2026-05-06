@@ -56,15 +56,27 @@ export const useExploreFeedStore = create<ExploreFeedStore>()(
           scrollY: 0,
         }),
       appendFeed: ({ items, page, hasMore, total }) =>
-        set((state) => ({
-          items: [...state.items, ...items],
-          page,
-          hasMore,
-          total,
-          initialized: true,
-          isLoading: false,
-          error: null,
-        })),
+        set((state) => {
+          if (page <= state.page) {
+            return {
+              isLoading: false,
+              error: null,
+            };
+          }
+
+          const existingIds = new Set(state.items.map((item) => item.id));
+          const nextItems = items.filter((item) => !existingIds.has(item.id));
+
+          return {
+            items: [...state.items, ...nextItems],
+            page,
+            hasMore,
+            total,
+            initialized: true,
+            isLoading: false,
+            error: null,
+          };
+        }),
       setLoading: (isLoading) => set({ isLoading }),
       setError: (error) => set({ error, isLoading: false }),
       setScrollY: (scrollY) => set({ scrollY }),
