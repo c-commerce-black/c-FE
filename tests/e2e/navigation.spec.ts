@@ -1,5 +1,97 @@
 import { expect, test } from "@playwright/test";
 
+import { MOCK_PRODUCT_DETAILS, MOCK_PRODUCTS } from "../../lib/catalog/mock-data";
+
+function filterProducts(url: URL) {
+  const category = url.searchParams.get("category") ?? "";
+  const q = (url.searchParams.get("q") ?? "").trim().toLowerCase();
+
+  return MOCK_PRODUCTS.filter((product) => {
+    const matchesCategory = !category || product.category === category;
+    const matchesQuery = !q || product.name.toLowerCase().includes(q);
+    return matchesCategory && matchesQuery;
+  });
+}
+
+async function mockProductApis(page: import("@playwright/test").Page) {
+  await page.route("**/api/products**", async (route) => {
+    const url = new URL(route.request().url());
+
+    if (url.pathname === "/api/products/feed") {
+      const pageNumber = Number(url.searchParams.get("page") ?? "1");
+      const limit = Number(url.searchParams.get("limit") ?? "3");
+      const products = filterProducts(url);
+      const start = Math.max(0, pageNumber - 1) * limit;
+      const items = products.slice(start, start + limit);
+      const hasMore = start + limit < products.length;
+
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: {
+            items,
+            nextPage: hasMore ? pageNumber + 1 : null,
+            hasMore,
+            total: products.length,
+          },
+        }),
+      });
+      return;
+    }
+
+    if (url.pathname.startsWith("/api/products/")) {
+      const id = decodeURIComponent(url.pathname.split("/").pop() ?? "");
+      const product = MOCK_PRODUCT_DETAILS[id];
+
+      await route.fulfill({
+        status: product ? 200 : 404,
+        contentType: "application/json",
+        body: JSON.stringify(
+          product
+            ? { success: true, data: { product } }
+            : {
+                success: false,
+                error: {
+                  message: "상품을 찾을 수 없습니다.",
+                  statusCode: 404,
+                },
+              },
+        ),
+      });
+      return;
+    }
+
+    if (url.pathname === "/api/products") {
+      const products = filterProducts(url);
+      const limit = Number(url.searchParams.get("limit") ?? "20");
+
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: {
+            products: products.slice(0, limit),
+            pagination: {
+              page: 1,
+              limit,
+              total: products.length,
+              totalPages: Math.max(1, Math.ceil(products.length / Math.max(limit, 1))),
+            },
+          },
+        }),
+      });
+      return;
+    }
+
+    await route.fallback();
+  });
+}
+
+test.beforeEach(async ({ page }) => {
+  await mockProductApis(page);
+});
+
 test("public navigation and auth redirect work", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "지금 바로 담기 좋은 상품" })).toBeVisible();

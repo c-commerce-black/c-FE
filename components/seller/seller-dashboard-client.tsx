@@ -5,9 +5,18 @@ import Link from "next/link";
 
 import { Button, Card, EmptyState } from "@/components/shared/ui";
 import { useDeleteSellerProductMutation } from "@/hooks/api";
+import { STATUS_LABELS, type ProductStatus } from "@/lib/catalog";
 import { getApiErrorMessage } from "@/lib/shared/api";
 import type { SellerProductsData } from "@/lib/seller";
 import { formatCurrency, formatDate } from "@/lib/shared/utils";
+
+const STATUS_BADGE_CLASSES: Record<ProductStatus, string> = {
+  ON_SALE: "bg-[#eefbf2] text-[#22c55e]",
+  EXPIRY_SOON: "bg-[#fff1f5] text-brand-primary",
+  SOLD_OUT: "bg-urgent/10 text-urgent",
+  EXPIRED: "bg-surface-sunken text-text-secondary",
+  DELETED: "bg-surface-sunken text-text-secondary",
+};
 
 export function SellerDashboardClient({
   initialData,
@@ -40,7 +49,14 @@ export function SellerDashboardClient({
         setProducts((current) => current.filter((item) => item.id !== deleting.id));
         setStats((current) => ({
           ...current,
-          onSale: Math.max(0, current.onSale - 1),
+          onSale:
+            deleting.status === "ON_SALE"
+              ? Math.max(0, current.onSale - 1)
+              : current.onSale,
+          expirySoon:
+            deleting.status === "EXPIRY_SOON"
+              ? Math.max(0, current.expirySoon - 1)
+              : current.expirySoon,
         }));
         setDeleting(null);
       })
@@ -108,13 +124,9 @@ export function SellerDashboardClient({
                       ) : null}
                     </div>
                     <span
-                      className={`rounded-full px-3 py-1 text-[13px] font-bold ${
-                        product.status === "EXPIRY_SOON"
-                          ? "bg-[#fff1f5] text-brand-primary"
-                          : "bg-[#eefbf2] text-[#22c55e]"
-                      }`}
+                      className={`rounded-full px-3 py-1 text-[13px] font-bold ${STATUS_BADGE_CLASSES[product.status]}`}
                     >
-                      {product.status === "EXPIRY_SOON" ? "마감임박" : "판매중"}
+                      {STATUS_LABELS[product.status]}
                     </span>
                   </div>
                   <div className="mt-3 text-[14px] leading-6 text-text-secondary">

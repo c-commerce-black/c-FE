@@ -34,6 +34,7 @@ describe("/api/uploads/images route", () => {
     expect(proxyMultipart).toHaveBeenCalledTimes(1);
     const forwarded = proxyMultipart.mock.calls[0]?.[0];
     expect(forwarded.path).toBe("/api/uploads/images");
+    expect(forwarded.auth).toBe(true);
     expect(forwarded.fallbackMessage).toBe("이미지 업로드에 실패했습니다.");
     expect(typeof forwarded.formData?.get).toBe("function");
     expect(forwarded.formData.get("image")).toBeTruthy();

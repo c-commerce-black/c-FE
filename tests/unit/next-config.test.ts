@@ -7,13 +7,20 @@ async function loadNextConfig() {
   return nextConfigModule.default;
 }
 
+function setNodeEnv(value: NodeJS.ProcessEnv["NODE_ENV"]) {
+  process.env = {
+    ...process.env,
+    NODE_ENV: value,
+  };
+}
+
 describe("next.config rewrites", () => {
   afterEach(() => {
     process.env = { ...ORIGINAL_ENV };
   });
 
   it("rewrites uploads paths to the configured API base URL", async () => {
-    process.env.NODE_ENV = "production";
+    setNodeEnv("production");
     process.env.API_BASE_URL = "https://api.example.com/";
 
     const nextConfig = await loadNextConfig();
@@ -30,7 +37,7 @@ describe("next.config rewrites", () => {
   });
 
   it("falls back to the development API base URL when unset", async () => {
-    process.env.NODE_ENV = "development";
+    setNodeEnv("development");
     delete process.env.API_BASE_URL;
 
     const nextConfig = await loadNextConfig();

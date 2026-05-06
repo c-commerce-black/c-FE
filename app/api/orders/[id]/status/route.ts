@@ -17,5 +17,11 @@ export async function PATCH(
     body,
     auth: true,
     fallbackMessage: "주문 상태 변경에 실패했습니다.",
+    allowEmptySuccess: true,
+    emptyData: {
+      order: {
+        status: body.status,
+      },
+    },
   });
 }

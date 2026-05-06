@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 const { backendGet, resolveApiResponseFromAxios, normalizeProductDetailData } = vi.hoisted(() => ({
   backendGet: vi.fn(),
@@ -105,6 +105,23 @@ describe("/api/products/[id] route", () => {
       error: {
         message: "상품을 찾을 수 없습니다.",
         statusCode: 404,
+      },
+    });
+  });
+
+  it("returns a structured service-unavailable response when the backend request fails", async () => {
+    backendGet.mockRejectedValue(new Error("ECONNREFUSED"));
+
+    const response = await GET(new Request("http://localhost:3000/api/products/prod-1"), {
+      params: Promise.resolve({ id: "prod-1" }),
+    });
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toEqual({
+      success: false,
+      error: {
+        message: "상품 정보를 불러오지 못했습니다.",
+        statusCode: 503,
       },
     });
   });

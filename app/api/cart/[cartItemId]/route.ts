@@ -16,6 +16,8 @@ export async function PATCH(
     body,
     auth: true,
     fallbackMessage: "수량 변경에 실패했습니다.",
+    allowEmptySuccess: true,
+    emptyData: {},
   });
 }
 
@@ -29,5 +31,7 @@ export async function DELETE(
     method: "DELETE",
     auth: true,
     fallbackMessage: "장바구니 상품 삭제에 실패했습니다.",
+    allowEmptySuccess: true,
+    emptyData: {},
   });
 }

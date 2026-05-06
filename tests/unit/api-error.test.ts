@@ -1,4 +1,10 @@
-import { AxiosError, type AxiosRequestConfig, type AxiosResponseHeaders } from "axios";
+import {
+  AxiosError,
+  type AxiosRequestConfig,
+  type AxiosResponse,
+  type AxiosResponseHeaders,
+  type InternalAxiosRequestConfig,
+} from "axios";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -14,6 +20,15 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+function createInternalConfig(
+  config?: AxiosRequestConfig,
+): InternalAxiosRequestConfig {
+  return {
+    ...config,
+    headers: config?.headers ?? {},
+  } as InternalAxiosRequestConfig;
+}
+
 function createAxiosResponse<T>({
   data,
   status,
@@ -24,13 +39,13 @@ function createAxiosResponse<T>({
   status: number;
   headers?: AxiosResponseHeaders | Record<string, string>;
   config?: AxiosRequestConfig;
-}) {
+}): AxiosResponse<T> {
   return {
     data,
     status,
     statusText: String(status),
     headers: headers ?? {},
-    config: config ?? { url: "/api/test" },
+    config: createInternalConfig(config ?? { url: "/api/test" }),
     request: {},
   };
 }

@@ -75,8 +75,26 @@ export function CartClient({ initialCart }: { initialCart: CartState }) {
   }, [initialCart.priceChanged, setShowPriceToast]);
 
   const selectedItems = useMemo(() => items, [items]);
+  const hasLocalCartChanges = useMemo(() => {
+    if (items.length !== initialCart.items.length) {
+      return true;
+    }
+
+    return items.some((item, index) => {
+      const initialItem = initialCart.items[index];
+      return (
+        !initialItem ||
+        getCartItemId(item) !== getCartItemId(initialItem) ||
+        item.quantity !== initialItem.quantity
+      );
+    });
+  }, [initialCart.items, items]);
 
   const summary = useMemo(() => {
+    if (!hasLocalCartChanges) {
+      return initialCart.summary;
+    }
+
     const totalAmount = selectedItems.reduce(
       (sum, item) => sum + item.product.originalPrice * item.quantity,
       0,
@@ -85,14 +103,14 @@ export function CartClient({ initialCart }: { initialCart: CartState }) {
       (sum, item) => sum + item.product.currentPrice * item.quantity,
       0,
     );
-    const shippingFee = selectedItems.length ? 2500 : 0;
+    const shippingFee = selectedItems.length ? initialCart.summary.shippingFee : 0;
     return {
       totalAmount,
       discountAmount: totalAmount - saleAmount,
       shippingFee,
       finalAmount: saleAmount + shippingFee,
     };
-  }, [selectedItems]);
+  }, [hasLocalCartChanges, initialCart.summary, selectedItems]);
 
   function updateQuantity(item: CartItem, quantity: number) {
     if (

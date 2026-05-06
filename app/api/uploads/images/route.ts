@@ -9,6 +9,7 @@ export async function POST(request: NextRequest) {
     return proxyMultipart({
       path: "/api/uploads/images",
       formData,
+      auth: true,
       fallbackMessage: "이미지 업로드에 실패했습니다.",
     });
   } catch {

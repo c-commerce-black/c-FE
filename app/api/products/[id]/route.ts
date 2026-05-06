@@ -1,6 +1,8 @@
+import type { AxiosResponse } from "axios";
+
 import { resolveApiResponseFromAxios } from "@/lib/shared/api";
 import { backendApi } from "@/lib/shared/api/backend";
-import { jsonApiResponse } from "@/lib/shared/api/server";
+import { jsonApiResponse, jsonError } from "@/lib/shared/api/server";
 import { normalizeProductDetailData } from "@/lib/catalog/service";
 import type { ApiResponse } from "@/lib/shared/types";
 
@@ -11,9 +13,15 @@ export async function GET(
   { params }: { params: Params },
 ) {
   const { id } = await params;
-  const response = await backendApi.get(`/api/products/${id}`, {
-    validateStatus: () => true,
-  });
+  let response: AxiosResponse<unknown>;
+  try {
+    response = await backendApi.get(`/api/products/${id}`, {
+      validateStatus: () => true,
+    });
+  } catch {
+    return jsonError("상품 정보를 불러오지 못했습니다.", 503);
+  }
+
   const { payload } = resolveApiResponseFromAxios<unknown>(
     response,
     "상품 정보를 불러오지 못했습니다.",

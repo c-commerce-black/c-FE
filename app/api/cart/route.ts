@@ -19,6 +19,8 @@ export async function POST(request: NextRequest) {
     body,
     auth: true,
     fallbackMessage: "장바구니에 담지 못했습니다.",
+    allowEmptySuccess: true,
+    emptyData: {},
   });
 }
 
@@ -28,5 +30,7 @@ export async function DELETE() {
     method: "DELETE",
     auth: true,
     fallbackMessage: "장바구니를 비우지 못했습니다.",
+    allowEmptySuccess: true,
+    emptyData: {},
   });
 }

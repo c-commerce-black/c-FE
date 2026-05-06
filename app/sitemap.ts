@@ -13,10 +13,14 @@ const staticRoutes = [
   "/seller",
 ];
 
+function createSiteUrl(route: string) {
+  return new URL(route || "/", env.siteUrl).toString();
+}
+
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
   return staticRoutes.map((route) => ({
-    url: `${env.siteUrl}${route}`,
+    url: createSiteUrl(route),
     lastModified: now,
     changeFrequency: route === "" ? "daily" : "weekly",
     priority: route === "" ? 1 : 0.7,

@@ -15,17 +15,19 @@ export function OrderActionPanel({
   orderId,
   status,
   canCancel,
+  canUpdateStatus = false,
 }: {
   orderId: string;
   status: OrderStatus;
   canCancel: boolean;
+  canUpdateStatus?: boolean;
 }) {
   const router = useRouter();
   const cancelOrderMutation = useCancelOrderMutation();
   const updateOrderStatusMutation = useUpdateOrderStatusMutation();
   const [feedback, setFeedback] = useState<string | null>(null);
 
-  const nextSellerStatus = getNextSellerOrderStatus(status);
+  const nextSellerStatus = canUpdateStatus ? getNextSellerOrderStatus(status) : null;
 
   function handleCancel() {
     setFeedback(null);

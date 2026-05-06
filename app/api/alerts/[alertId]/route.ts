@@ -12,5 +12,7 @@ export async function DELETE(
     method: "DELETE",
     auth: true,
     fallbackMessage: "알림 해제에 실패했습니다.",
+    allowEmptySuccess: true,
+    emptyData: {},
   });
 }

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 const { backendGet } = vi.hoisted(() => ({
   backendGet: vi.fn(),
@@ -12,7 +12,7 @@ vi.mock("@/lib/shared/api/backend", () => ({
 
 import { getAlerts } from "@/lib/alerts/service";
 import { getCart } from "@/lib/cart/service";
-import { getProducts } from "@/lib/catalog/service";
+import { getProductFeedPage, getProducts } from "@/lib/catalog/service";
 import { getOrders } from "@/lib/orders/service";
 import { getSellerProducts } from "@/lib/seller/service";
 
@@ -76,6 +76,50 @@ describe("service response normalization", () => {
         limit: 10,
         total: 21,
         totalPages: 3,
+      },
+    });
+  });
+
+  it("forwards product feed search terms to backend pagination", async () => {
+    backendGet.mockResolvedValueOnce(
+      createAxiosResponse({
+        success: true,
+        data: {
+          items: [
+            {
+              productId: "prod-1",
+              title: "샐러드",
+              category: "FOOD",
+              price: 7000,
+              stock: 5,
+            },
+          ],
+          meta: {
+            currentPage: 1,
+            size: 3,
+            totalCount: 1,
+            pageCount: 1,
+          },
+        },
+      }),
+    );
+
+    await getProductFeedPage({
+      page: 1,
+      limit: 3,
+      category: "FOOD",
+      sort: "expiry_asc",
+      q: "샐러드",
+    });
+
+    expect(backendGet).toHaveBeenCalledWith("/api/products", {
+      params: {
+        page: 1,
+        limit: 3,
+        category: "FOOD",
+        sort: "expiry_asc",
+        status: undefined,
+        q: "샐러드",
       },
     });
   });
@@ -171,12 +215,13 @@ describe("service response normalization", () => {
                 productId: "prod-1",
                 title: "샐러드",
                 content: "오늘 입고",
-                category: "FOOD",
+                productCategory: "FOOD",
                 basePrice: 9000,
                 salePrice: 7000,
-                inventory: 8,
+                remainingQuantity: 8,
                 expiresAt: "2026-04-12",
                 thumbnailUrl: "https://cdn.example/salad.png",
+                productStatus: "EXPIRY_SOON",
                 soldTodayCount: 3,
               },
             ],
@@ -238,8 +283,11 @@ describe("service response normalization", () => {
             id: "prod-1",
             name: "샐러드",
             description: "오늘 입고",
+            category: "FOOD",
             originalPrice: 9000,
             currentPrice: 7000,
+            stock: 8,
+            status: "EXPIRY_SOON",
           }),
         ],
       }),
