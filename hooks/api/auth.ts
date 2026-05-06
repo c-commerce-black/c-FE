@@ -21,7 +21,9 @@ export type SignupPayload = {
 export function useLoginMutation() {
   return useMutation({
     mutationFn: async (payload: LoginPayload) => {
-      const response = await appApi.post("/api/auth/login", payload);
+      const response = await appApi.post("/api/auth/login", payload, {
+        fallbackMessage: "로그인에 실패했습니다.",
+      });
       const data = unwrapApiResponse<{
         user?: User;
         accessToken?: string;
@@ -38,7 +40,9 @@ export function useLoginMutation() {
 export function useSignupMutation() {
   return useMutation({
     mutationFn: async (payload: SignupPayload) => {
-      const response = await appApi.post("/api/auth/register", payload);
+      const response = await appApi.post("/api/auth/register", payload, {
+        fallbackMessage: "회원가입에 실패했습니다.",
+      });
       const data = unwrapApiResponse<{
         user?: User;
         accessToken?: string;

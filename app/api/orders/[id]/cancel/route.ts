@@ -12,5 +12,9 @@ export async function PATCH(
     method: "PATCH",
     auth: true,
     fallbackMessage: "주문 취소에 실패했습니다.",
+    allowEmptySuccess: true,
+    emptyData: {
+      message: "주문이 취소되었습니다.",
+    },
   });
 }

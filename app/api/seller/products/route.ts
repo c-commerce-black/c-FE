@@ -27,5 +27,7 @@ export async function POST(request: NextRequest) {
     body,
     auth: true,
     fallbackMessage: "상품 등록에 실패했습니다.",
+    allowEmptySuccess: true,
+    emptyData: {},
   });
 }
