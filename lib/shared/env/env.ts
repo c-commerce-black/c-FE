@@ -37,7 +37,7 @@ function readSiteUrl() {
     readConfiguredUrl(process.env.NEXT_PUBLIC_SITE_URL, process.env.SITE_URL) ||
     normalizeVercelUrl(process.env.VERCEL_PROJECT_PRODUCTION_URL) ||
     normalizeVercelUrl(process.env.VERCEL_URL) ||
-    (!isProduction ? DEFAULT_DEV_SITE_URL : undefined);
+    DEFAULT_DEV_SITE_URL;
 
   if (!value) {
     throw new Error("Missing required site URL source");
