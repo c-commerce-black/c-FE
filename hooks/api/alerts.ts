@@ -1,8 +1,39 @@
 "use client";
 
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 
+import { normalizeAlertsData } from "@/lib/alerts/normalize";
 import { appApi, unwrapApiResponse } from "@/lib/shared/api";
+
+const ALERT_NOTIFICATION_REFETCH_INTERVAL = 60_000;
+const ALERT_NOTIFICATION_STALE_TIME = 30_000;
+
+export const alertsQueryKeys = {
+  notification: () => ["alerts", "notification"] as const,
+};
+
+export function useAlertsNotificationQuery({
+  enabled,
+}: {
+  enabled: boolean;
+}) {
+  return useQuery({
+    queryKey: alertsQueryKeys.notification(),
+    enabled,
+    staleTime: ALERT_NOTIFICATION_STALE_TIME,
+    refetchInterval: ALERT_NOTIFICATION_REFETCH_INTERVAL,
+    queryFn: async () => {
+      const response = await appApi.get("/api/alerts", {
+        fallbackMessage: "알림 목록을 불러오지 못했습니다.",
+      });
+      const data = unwrapApiResponse<unknown>(
+        response,
+        "알림 목록을 불러오지 못했습니다.",
+      );
+      return normalizeAlertsData(data);
+    },
+  });
+}
 
 export function useCreateAlertMutation() {
   return useMutation({
