@@ -120,4 +120,40 @@ describe("CartClient", () => {
       "₩10,000",
     );
   });
+
+  it("commits a directly typed cart quantity with Enter", async () => {
+    const user = userEvent.setup();
+    render(<CartClient initialCart={createCart()} />);
+
+    const quantityInput = screen.getByLabelText("샐러드 수량 직접 입력");
+    await user.clear(quantityInput);
+    await user.type(quantityInput, "3{Enter}");
+
+    await waitFor(() => {
+      expect(updateQuantity).toHaveBeenCalledWith({
+        itemId: "cart-1",
+        quantity: 3,
+      });
+    });
+    expect(screen.getByText("총 결제금액").nextElementSibling).toHaveTextContent(
+      "₩15,000",
+    );
+  });
+
+  it("caps bulk cart increments at the available stock", async () => {
+    const user = userEvent.setup();
+    render(<CartClient initialCart={createCart()} />);
+
+    await user.click(screen.getByRole("button", { name: "샐러드 수량 5개 추가" }));
+
+    await waitFor(() => {
+      expect(updateQuantity).toHaveBeenCalledWith({
+        itemId: "cart-1",
+        quantity: 3,
+      });
+    });
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "샐러드 구매 가능 수량은 3개입니다.",
+    );
+  });
 });

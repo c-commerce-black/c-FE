@@ -1,5 +1,6 @@
 "use client";
 
+import type { ChangeEvent, KeyboardEvent } from "react";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { Minus, Plus, Trash2 } from "lucide-react";
@@ -16,10 +17,16 @@ import {
   useUpdateCartItemQuantityMutation,
 } from "@/hooks/api";
 import type { CartItem, CartState } from "@/lib/cart";
-import { formatCurrency } from "@/lib/shared/utils";
+import {
+  clampQuantity,
+  formatCurrency,
+  readQuantityInput,
+  sanitizeQuantityInput,
+} from "@/lib/shared/utils";
 import { useCheckoutStore } from "@/stores/checkout-store";
 
 const BLOCKED_PRODUCT_STATUSES = new Set(["SOLD_OUT", "EXPIRED", "DELETED"]);
+const CART_BULK_INCREMENT_STEPS = [5, 10];
 
 function getCartItemId(item: CartItem) {
   return item.cartItemId ?? item.id ?? item.product.id;
@@ -46,10 +53,22 @@ function getStockFeedback(item: CartItem) {
   return null;
 }
 
+function isQuantityUpdateDisabled(item: CartItem) {
+  return (
+    BLOCKED_PRODUCT_STATUSES.has(item.product.status) ||
+    item.product.stock === 0
+  );
+}
+
+function getNormalizedCartQuantity(item: CartItem, quantity: number) {
+  return clampQuantity(quantity, item.product.stock);
+}
+
 export function CartClient({ initialCart }: { initialCart: CartState }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [items, setItems] = useState(initialCart.items);
+  const [quantityDrafts, setQuantityDrafts] = useState<Record<string, string>>({});
   const [feedback, setFeedback] = useState<string | null>(null);
   const [showCheckoutSheet, setShowCheckoutSheet] = useState(false);
   const updateQuantityMutation = useUpdateCartItemQuantityMutation();
@@ -112,7 +131,27 @@ export function CartClient({ initialCart }: { initialCart: CartState }) {
     };
   }, [hasLocalCartChanges, initialCart.summary, selectedItems]);
 
+  function setQuantityDraft(itemId: string, value: string) {
+    setQuantityDrafts((current) => ({
+      ...current,
+      [itemId]: value,
+    }));
+  }
+
+  function clearQuantityDraft(itemId: string) {
+    setQuantityDrafts((current) => {
+      if (!(itemId in current)) {
+        return current;
+      }
+
+      const next = { ...current };
+      delete next[itemId];
+      return next;
+    });
+  }
+
   function updateQuantity(item: CartItem, quantity: number) {
+    const itemId = getCartItemId(item);
     if (
       BLOCKED_PRODUCT_STATUSES.has(item.product.status) ||
       item.product.stock === 0
@@ -120,33 +159,29 @@ export function CartClient({ initialCart }: { initialCart: CartState }) {
       setFeedback(
         getStockFeedback(item) ?? "현재 구매할 수 없는 상품입니다.",
       );
+      clearQuantityDraft(itemId);
       return;
     }
 
-    const nextQuantity =
-      item.product.stock === null
-        ? Math.max(1, quantity)
-        : Math.min(item.product.stock, Math.max(1, quantity));
+    const nextQuantity = getNormalizedCartQuantity(item, quantity);
     const stockFeedback =
       quantity > nextQuantity && quantity > item.quantity
         ? getStockFeedback({ ...item, quantity })
         : null;
-    if (stockFeedback) {
-      setFeedback(stockFeedback);
-      return;
-    }
 
     if (nextQuantity === item.quantity) {
+      setFeedback(stockFeedback);
+      clearQuantityDraft(itemId);
       return;
     }
 
     startTransition(async () => {
-      setFeedback(null);
-      const itemId = getCartItemId(item);
+      setFeedback(stockFeedback);
       try {
         await updateQuantityMutation.mutateAsync({ itemId, quantity: nextQuantity });
       } catch (error) {
         setFeedback(getApiErrorMessage(error, "수량 변경에 실패했습니다."));
+        clearQuantityDraft(itemId);
         return;
       }
 
@@ -155,7 +190,60 @@ export function CartClient({ initialCart }: { initialCart: CartState }) {
           getCartItemId(entry) === itemId ? { ...entry, quantity: nextQuantity } : entry,
         ),
       );
+      clearQuantityDraft(itemId);
     });
+  }
+
+  function handleQuantityDraftChange(
+    item: CartItem,
+    event: ChangeEvent<HTMLInputElement>,
+  ) {
+    setQuantityDraft(getCartItemId(item), sanitizeQuantityInput(event.target.value));
+  }
+
+  function commitQuantityDraft(item: CartItem) {
+    const itemId = getCartItemId(item);
+    const draft = quantityDrafts[itemId] ?? String(item.quantity);
+    const parsedQuantity = readQuantityInput(draft);
+
+    if (parsedQuantity === null) {
+      clearQuantityDraft(itemId);
+      return;
+    }
+
+    setQuantityDraft(itemId, String(getNormalizedCartQuantity(item, parsedQuantity)));
+    updateQuantity(item, parsedQuantity);
+  }
+
+  function handleQuantityDraftKeyDown(
+    item: CartItem,
+    event: KeyboardEvent<HTMLInputElement>,
+  ) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      commitQuantityDraft(item);
+    }
+
+    if (event.key === "Escape") {
+      clearQuantityDraft(getCartItemId(item));
+    }
+  }
+
+  function adjustQuantity(item: CartItem, delta: number) {
+    const itemId = getCartItemId(item);
+    const nextQuantity = getNormalizedCartQuantity(item, item.quantity + delta);
+    setQuantityDraft(itemId, String(nextQuantity));
+    updateQuantity(item, item.quantity + delta);
+  }
+
+  function setMaxQuantity(item: CartItem) {
+    if (item.product.stock === null) {
+      return;
+    }
+
+    const itemId = getCartItemId(item);
+    setQuantityDraft(itemId, String(item.product.stock));
+    updateQuantity(item, item.product.stock);
   }
 
   function checkout() {
@@ -202,6 +290,7 @@ export function CartClient({ initialCart }: { initialCart: CartState }) {
       try {
         await deleteCartItemMutation.mutateAsync({ itemId });
         setItems((current) => current.filter((entry) => getCartItemId(entry) !== itemId));
+        clearQuantityDraft(itemId);
       } catch (error) {
         setFeedback(getApiErrorMessage(error, "장바구니 상품 삭제에 실패했습니다."));
       }
@@ -214,6 +303,7 @@ export function CartClient({ initialCart }: { initialCart: CartState }) {
       try {
         await clearCartMutation.mutateAsync();
         setItems([]);
+        setQuantityDrafts({});
       } catch (error) {
         setFeedback(getApiErrorMessage(error, "장바구니를 비우지 못했습니다."));
       }
@@ -261,8 +351,14 @@ export function CartClient({ initialCart }: { initialCart: CartState }) {
         </div>
         <div className="space-y-4">
           {items.map((item) => {
+            const itemId = getCartItemId(item);
+            const stockMax = item.product.stock;
+            const quantityDisabled = pending || isQuantityUpdateDisabled(item);
+            const atMaxStock = stockMax !== null && item.quantity >= stockMax;
+            const quantityInputValue = quantityDrafts[itemId] ?? String(item.quantity);
+
             return (
-              <Card key={getCartItemId(item)} className="p-4">
+              <Card key={itemId} className="p-4">
                 <div className="flex items-start gap-3">
                   <div className="flex size-16 items-center justify-center rounded-[14px] bg-[linear-gradient(135deg,_#eefdf3,_#f8fffb)]">
                     <div className="size-7 rounded-full bg-[#b4f2c6]" />
@@ -303,43 +399,71 @@ export function CartClient({ initialCart }: { initialCart: CartState }) {
                       ) : null}
                     </div>
                   </div>
-                  <div className="flex shrink-0 items-center gap-2 pt-8">
+                  <button
+                    type="button"
+                    onClick={() => removeItem(item)}
+                    className="flex size-9 shrink-0 items-center justify-center rounded-[10px] border border-border bg-white text-text-secondary disabled:cursor-not-allowed disabled:opacity-40"
+                    aria-label="장바구니 상품 삭제"
+                    disabled={pending}
+                  >
+                    <Trash2 className="size-4" />
+                  </button>
+                </div>
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={() =>
-                        updateQuantity(item, Math.max(1, item.quantity - 1))
-                      }
-                      disabled={item.quantity <= 1 || pending}
-                      className="flex size-8 items-center justify-center rounded-[10px] border border-border bg-surface-sunken text-[#657185] disabled:cursor-not-allowed disabled:opacity-40"
+                      onClick={() => adjustQuantity(item, -1)}
+                      disabled={quantityDisabled || item.quantity <= 1}
+                      className="flex size-9 items-center justify-center rounded-[10px] border border-border bg-surface-sunken text-[#657185] disabled:cursor-not-allowed disabled:opacity-40"
                       aria-label="수량 감소"
                     >
                       <Minus className="size-4" />
                     </button>
-                    <span className="min-w-4 text-center text-[18px] font-black text-foreground">
-                      {item.quantity}
-                    </span>
+                    <input
+                      value={quantityInputValue}
+                      onChange={(event) => handleQuantityDraftChange(item, event)}
+                      onBlur={() => commitQuantityDraft(item)}
+                      onKeyDown={(event) => handleQuantityDraftKeyDown(item, event)}
+                      disabled={quantityDisabled}
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      aria-label={`${item.product.name} 수량 직접 입력`}
+                      className="h-9 w-16 rounded-[10px] border border-border bg-white px-2 text-center text-[17px] font-black text-foreground outline-none transition focus:border-brand-secondary disabled:cursor-not-allowed disabled:opacity-40"
+                    />
                     <button
                       type="button"
-                      onClick={() => updateQuantity(item, item.quantity + 1)}
-                      disabled={
-                        pending ||
-                        BLOCKED_PRODUCT_STATUSES.has(item.product.status) ||
-                        (item.product.stock !== null &&
-                          item.quantity >= item.product.stock)
-                      }
-                      className="flex size-8 items-center justify-center rounded-[10px] border border-[#ffd5ea] bg-white text-brand-primary disabled:cursor-not-allowed disabled:opacity-40"
+                      onClick={() => adjustQuantity(item, 1)}
+                      disabled={quantityDisabled || atMaxStock}
+                      className="flex size-9 items-center justify-center rounded-[10px] border border-[#ffd5ea] bg-white text-brand-primary disabled:cursor-not-allowed disabled:opacity-40"
                       aria-label="수량 증가"
                     >
                       <Plus className="size-4" />
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => removeItem(item)}
-                      className="ml-1 flex size-8 items-center justify-center rounded-[10px] border border-border bg-white text-text-secondary"
-                      aria-label="장바구니 상품 삭제"
-                    >
-                      <Trash2 className="size-4" />
-                    </button>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {CART_BULK_INCREMENT_STEPS.map((step) => (
+                      <button
+                        key={step}
+                        type="button"
+                        onClick={() => adjustQuantity(item, step)}
+                        disabled={quantityDisabled || atMaxStock}
+                        className="h-8 rounded-[10px] border border-border bg-white px-3 text-[12px] font-black text-text-secondary transition hover:border-brand-primary/40 hover:bg-brand-primary-muted/40 disabled:cursor-not-allowed disabled:opacity-40"
+                        aria-label={`${item.product.name} 수량 ${step}개 추가`}
+                      >
+                        +{step}
+                      </button>
+                    ))}
+                    {stockMax !== null ? (
+                      <button
+                        type="button"
+                        onClick={() => setMaxQuantity(item)}
+                        disabled={quantityDisabled || atMaxStock}
+                        className="h-8 rounded-[10px] border border-brand-primary/30 bg-brand-primary-muted/60 px-3 text-[12px] font-black text-brand-primary transition hover:bg-brand-primary-muted disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        최대
+                      </button>
+                    ) : null}
                   </div>
                 </div>
               </Card>
