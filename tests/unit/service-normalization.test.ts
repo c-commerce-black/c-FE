@@ -161,6 +161,8 @@ describe("service response normalization", () => {
               {
                 id: "alert-1",
                 enabled: true,
+                unread: true,
+                notifiedAt: "2026-05-20T08:00:00.000Z",
                 targetProduct: {
                   productId: "prod-1",
                   title: "샐러드",
@@ -170,6 +172,7 @@ describe("service response normalization", () => {
               },
             ],
             specialDeals: [],
+            unreadCount: 1,
           },
         }),
       )
@@ -249,6 +252,8 @@ describe("service response normalization", () => {
       wishAlerts: [
         expect.objectContaining({
           alertId: "alert-1",
+          isTriggered: true,
+          notifiedAt: "2026-05-20T08:00:00.000Z",
           product: expect.objectContaining({
             id: "prod-1",
             name: "샐러드",
@@ -256,6 +261,7 @@ describe("service response normalization", () => {
         }),
       ],
       todayDeals: [],
+      unreadCount: 1,
     });
 
     await expect(getOrders("token")).resolves.toEqual(

@@ -12,5 +12,14 @@ export type AlertProduct = {
 export type AlertItem = {
   alertId: string | null;
   isOn: boolean;
+  isRead: boolean | null;
+  isTriggered: boolean;
+  notifiedAt: string | null;
   product: AlertProduct;
+};
+
+export type AlertsData = {
+  wishAlerts: AlertItem[];
+  todayDeals: AlertItem[];
+  unreadCount: number;
 };
