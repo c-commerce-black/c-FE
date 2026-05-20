@@ -1,5 +1,6 @@
 "use client";
 
+import type { ChangeEvent, KeyboardEvent } from "react";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { Heart, Minus, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -14,7 +15,13 @@ import {
   useCreateProductAlertMutation,
 } from "@/hooks/api";
 import type { ProductDetail } from "@/lib/catalog";
-import { cn, formatCurrency } from "@/lib/shared/utils";
+import {
+  clampQuantity,
+  cn,
+  formatCurrency,
+  readQuantityInput,
+  sanitizeQuantityInput,
+} from "@/lib/shared/utils";
 
 type Feedback = {
   message: string;
@@ -26,6 +33,7 @@ const BLOCKED_PRODUCT_STATUSES = new Set<ProductDetail["status"]>([
   "EXPIRED",
   "DELETED",
 ]);
+const QUICK_QUANTITY_OPTIONS = [5, 10, 20];
 
 export function ProductDetailActions({
   product,
@@ -39,6 +47,7 @@ export function ProductDetailActions({
   const isPurchasable =
     availableStock > 0 && !BLOCKED_PRODUCT_STATUSES.has(product.status);
   const [quantity, setQuantity] = useState(1);
+  const [quantityDraft, setQuantityDraft] = useState<string | null>(null);
   const [wishing, startWish] = useTransition();
   const [submitting, startSubmitting] = useTransition();
   const [feedback, setFeedback] = useState<Feedback | null>(null);
@@ -48,10 +57,18 @@ export function ProductDetailActions({
   const selectedQuantity = isPurchasable
     ? Math.min(availableStock, Math.max(1, quantity))
     : 0;
+  const quantityInputValue = quantityDraft ?? String(selectedQuantity || 1);
 
   const total = useMemo(
     () => product.currentPrice * selectedQuantity,
     [product.currentPrice, selectedQuantity],
+  );
+  const quickQuantities = useMemo(
+    () =>
+      isPurchasable
+        ? QUICK_QUANTITY_OPTIONS.filter((option) => option < availableStock)
+        : [],
+    [availableStock, isPurchasable],
   );
 
   useEffect(() => {
@@ -63,6 +80,56 @@ export function ProductDetailActions({
     }, 1000);
     return () => window.clearInterval(timer);
   }, [initialRemainSeconds, product.id]);
+
+  function setRequestedQuantity(value: number) {
+    if (!isPurchasable) {
+      return;
+    }
+
+    const nextQuantity = clampQuantity(value, availableStock);
+    setQuantity(nextQuantity);
+    setQuantityDraft(null);
+    if (value > nextQuantity) {
+      setFeedback({
+        message: `구매 가능 수량은 ${availableStock}개입니다.`,
+        tone: "error",
+      });
+      return;
+    }
+
+    setFeedback(null);
+  }
+
+  function handleQuantityInputChange(event: ChangeEvent<HTMLInputElement>) {
+    const sanitized = sanitizeQuantityInput(event.target.value);
+    setQuantityDraft(sanitized);
+
+    const nextQuantity = readQuantityInput(sanitized);
+    if (nextQuantity !== null) {
+      setRequestedQuantity(nextQuantity);
+    }
+  }
+
+  function handleQuantityInputBlur() {
+    const nextQuantity = readQuantityInput(quantityInputValue);
+    if (nextQuantity === null) {
+      setQuantityDraft(null);
+      return;
+    }
+
+    setRequestedQuantity(nextQuantity);
+  }
+
+  function handleQuantityInputKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      handleQuantityInputBlur();
+    }
+
+    if (event.key === "Escape") {
+      setQuantityDraft(null);
+    }
+  }
 
   async function handleCart() {
     if (!isPurchasable) {
@@ -184,21 +251,27 @@ export function ProductDetailActions({
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => setQuantity((value) => Math.max(1, value - 1))}
+              onClick={() => setRequestedQuantity(selectedQuantity - 1)}
               disabled={!isPurchasable || selectedQuantity <= 1}
               className="flex size-10 items-center justify-center rounded-[10px] border border-border bg-surface-sunken text-foreground disabled:cursor-not-allowed disabled:opacity-40"
               aria-label="수량 감소"
             >
               <Minus className="size-4" />
             </button>
-            <span className="min-w-7 text-center text-[18px] font-black text-foreground">
-              {selectedQuantity}
-            </span>
+            <input
+              value={quantityInputValue}
+              onChange={handleQuantityInputChange}
+              onBlur={handleQuantityInputBlur}
+              onKeyDown={handleQuantityInputKeyDown}
+              disabled={!isPurchasable}
+              inputMode="numeric"
+              pattern="[0-9]*"
+              aria-label="수량 직접 입력"
+              className="h-10 w-16 rounded-[10px] border border-border bg-white px-2 text-center text-[18px] font-black text-foreground outline-none transition placeholder:text-text-tertiary focus:border-brand-secondary disabled:cursor-not-allowed disabled:opacity-40"
+            />
             <button
               type="button"
-              onClick={() =>
-                setQuantity((value) => Math.min(availableStock, value + 1))
-              }
+              onClick={() => setRequestedQuantity(selectedQuantity + 1)}
               disabled={!isPurchasable || selectedQuantity >= availableStock}
               className="flex size-10 items-center justify-center rounded-[10px] bg-brand-primary text-white disabled:cursor-not-allowed disabled:opacity-40"
               aria-label="수량 증가"
@@ -207,6 +280,31 @@ export function ProductDetailActions({
             </button>
           </div>
         </div>
+        {quickQuantities.length > 0 || (isPurchasable && availableStock > 1) ? (
+          <div className="mb-3 flex flex-wrap justify-end gap-1.5">
+            {quickQuantities.map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => setRequestedQuantity(option)}
+                className="h-8 rounded-[10px] border border-border bg-white px-3 text-[12px] font-black text-text-secondary transition hover:border-brand-primary/40 hover:bg-brand-primary-muted/40 disabled:cursor-not-allowed disabled:opacity-40"
+                disabled={!isPurchasable}
+              >
+                {option}개
+              </button>
+            ))}
+            {isPurchasable && availableStock > 1 ? (
+              <button
+                type="button"
+                onClick={() => setRequestedQuantity(availableStock)}
+                className="h-8 rounded-[10px] border border-brand-primary/30 bg-brand-primary-muted/60 px-3 text-[12px] font-black text-brand-primary transition hover:bg-brand-primary-muted disabled:cursor-not-allowed disabled:opacity-40"
+                disabled={!isPurchasable || selectedQuantity >= availableStock}
+              >
+                최대
+              </button>
+            ) : null}
+          </div>
+        ) : null}
         <div className="rounded-[14px] border border-brand-primary/25 bg-brand-primary-muted/60 px-4 py-3">
           <div className="flex items-center justify-between">
             <span className="text-[14px] font-semibold text-[#505c70]">총 금액</span>
