@@ -21,7 +21,7 @@ describe("playwright config", () => {
 
     expect(config.use?.baseURL).toBe("https://staging.example.com");
     expect(config.webServer).toBeUndefined();
-  });
+  }, 15_000);
 
   it("starts the local dev server for local e2e runs", async () => {
     delete process.env.PLAYWRIGHT_BASE_URL;

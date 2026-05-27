@@ -12,3 +12,10 @@ export const ORDER_STATUS_LABELS = {
   DELIVERED: "배송완료",
   CANCELLED: "취소됨",
 } as const;
+
+export const ORDER_PAYMENT_STATUS_LABELS = {
+  UNPAID: "결제 대기",
+  FAILED: "결제 실패",
+  PARTIAL: "부분 결제",
+  PAID: "결제 완료",
+} as const;

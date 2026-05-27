@@ -46,3 +46,14 @@ export function useUpdateOrderStatusMutation() {
     },
   });
 }
+
+export function usePayOrderMutation() {
+  return useMutation({
+    mutationFn: async ({ orderId }: { orderId: string }) => {
+      const response = await appApi.post(`/api/orders/${orderId}/pay`);
+      return unwrapApiResponse<{
+        order: { id: string; paymentStatus?: string; paidAt?: number };
+      }>(response, "주문 결제에 실패했습니다.");
+    },
+  });
+}

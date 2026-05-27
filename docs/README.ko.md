@@ -61,7 +61,7 @@ cp .env.example .env.local
 개발에서는 권장 변수이며, 배포 환경에서는 필수입니다:
 
 ```env
-API_BASE_URL=http://localhost:8080
+API_BASE_URL=http://localhost:3000
 ```
 
 ## 시작하기

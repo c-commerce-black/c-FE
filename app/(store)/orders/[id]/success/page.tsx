@@ -6,11 +6,13 @@ import { Badge } from "@/components/shared/ui";
 import { Card } from "@/components/shared/ui";
 import { PageFallbackNotice } from "@/components/shared/ui";
 import { getSessionToken, requireUser } from "@/lib/auth/server";
+import { ORDER_PAYMENT_STATUS_LABELS } from "@/lib/orders";
 import { getOrder } from "@/lib/orders/service";
 import { createPageLoadState, type PageLoadState } from "@/lib/shared/types";
 import { formatCurrency } from "@/lib/shared/utils";
 
 type Params = Promise<{ id: string }>;
+type SearchParams = Promise<{ payment?: string }>;
 
 async function getOrderPageData(token: string, id: string): Promise<{
   order: Awaited<ReturnType<typeof getOrder>>["order"] | null;
@@ -32,10 +34,13 @@ async function getOrderPageData(token: string, id: string): Promise<{
 
 export default async function OrderSuccessPage({
   params,
+  searchParams,
 }: {
   params: Params;
+  searchParams: SearchParams;
 }) {
   const { id } = await params;
+  const resolvedSearchParams = await searchParams;
   await requireUser(`/orders/${id}/success`);
   const token = await getSessionToken();
   const { order, loadState } = await getOrderPageData(token as string, id);
@@ -82,6 +87,13 @@ export default async function OrderSuccessPage({
     );
   }
   const cancelled = order.status === "CANCELLED";
+  const paymentFailed = resolvedSearchParams.payment === "failed";
+  const canPay =
+    order.status !== "CANCELLED" && order.paymentStatus !== "PAID" && order.paymentStatus !== "PARTIAL";
+  const canCancel =
+    order.status === "PENDING" &&
+    order.paymentStatus !== "PAID" &&
+    order.paymentStatus !== "PARTIAL";
 
   return (
     <div className="cc-grid space-y-6 py-5">
@@ -96,6 +108,16 @@ export default async function OrderSuccessPage({
           빠르게 준비해 드릴게요
         </p>
       </section>
+      {paymentFailed || order.paymentStatus !== "PAID" ? (
+        <Card className="space-y-2 border border-urgent/20 bg-urgent/5 p-4">
+          <p className="text-[15px] font-bold text-foreground">
+            {paymentFailed ? "주문은 생성됐지만 결제가 완료되지 않았습니다." : "결제 상태를 확인해 주세요."}
+          </p>
+          <p className="text-[14px] leading-6 text-text-secondary">
+            현재 상태는 {ORDER_PAYMENT_STATUS_LABELS[order.paymentStatus]}입니다. 계정 페이지에서 지갑 정보를 수정하거나 아래에서 다시 결제할 수 있습니다.
+          </p>
+        </Card>
+      ) : null}
       <Card className="space-y-4 p-4">
         <div>
           <p className="text-[12px] font-semibold text-[#9ca6b6]">주문 요약</p>
@@ -112,6 +134,9 @@ export default async function OrderSuccessPage({
           </p>
         </div>
         <div className="flex gap-2">
+          <Badge tone={order.paymentStatus === "PAID" ? "teal" : "error"}>
+            {ORDER_PAYMENT_STATUS_LABELS[order.paymentStatus]}
+          </Badge>
           {order.items.slice(0, 2).map((item) => (
             <Badge key={item.productId} tone="error">
               D-{item.dDay ?? 0} 포함
@@ -123,7 +148,9 @@ export default async function OrderSuccessPage({
       <OrderActionPanel
         orderId={order.id}
         status={order.status}
-        canCancel={order.status === "PENDING"}
+        paymentStatus={order.paymentStatus}
+        canCancel={canCancel}
+        canPay={canPay}
       />
       <Link
         href="/"

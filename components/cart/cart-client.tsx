@@ -14,6 +14,8 @@ import {
   useClearCartMutation,
   useCreateOrderMutation,
   useDeleteCartItemMutation,
+  usePayOrderMutation,
+  usePaymentProfileQuery,
   useUpdateCartItemQuantityMutation,
 } from "@/hooks/api";
 import type { CartItem, CartState } from "@/lib/cart";
@@ -75,13 +77,14 @@ export function CartClient({ initialCart }: { initialCart: CartState }) {
   const deleteCartItemMutation = useDeleteCartItemMutation();
   const clearCartMutation = useClearCartMutation();
   const createOrderMutation = useCreateOrderMutation();
+  const payOrderMutation = usePayOrderMutation();
+  const paymentProfileQuery = usePaymentProfileQuery();
 
   const shippingAddress = useCheckoutStore((state) => state.shippingAddress);
   const showPriceToast = useCheckoutStore((state) => state.showPriceToast);
   const setShippingAddress = useCheckoutStore((state) => state.setShippingAddress);
   const setSelectedCartItemIds = useCheckoutStore((state) => state.setSelectedCartItemIds);
   const setShowPriceToast = useCheckoutStore((state) => state.setShowPriceToast);
-
   useEffect(() => {
     setSelectedCartItemIds(items.map(getCartItemId));
   }, [items, setSelectedCartItemIds]);
@@ -255,7 +258,6 @@ export function CartClient({ initialCart }: { initialCart: CartState }) {
       setFeedback("주문할 상품을 선택해 주세요.");
       return;
     }
-
     const stockLimitedItem = selectedItems.find(hasKnownStockIssue);
     if (stockLimitedItem) {
       setFeedback(
@@ -274,7 +276,12 @@ export function CartClient({ initialCart }: { initialCart: CartState }) {
         });
 
         setShowCheckoutSheet(false);
-        router.push(`/orders/${data.order.id}/success`);
+        try {
+          await payOrderMutation.mutateAsync({ orderId: data.order.id });
+          router.push(`/orders/${data.order.id}/success?payment=paid`);
+        } catch {
+          router.push(`/orders/${data.order.id}/success?payment=failed`);
+        }
         router.refresh();
       } catch (error) {
         setFeedback(getApiErrorMessage(error, "주문 생성에 실패했습니다."));
@@ -341,7 +348,8 @@ export function CartClient({ initialCart }: { initialCart: CartState }) {
                   updateQuantityMutation.isPending ||
                   deleteCartItemMutation.isPending ||
                   clearCartMutation.isPending ||
-                  createOrderMutation.isPending
+                  createOrderMutation.isPending ||
+                  payOrderMutation.isPending
                 }
               >
                 전체 비우기
@@ -539,7 +547,7 @@ export function CartClient({ initialCart }: { initialCart: CartState }) {
             <div>
               <p className="text-[16px] font-black text-foreground">배송지 입력</p>
               <p className="mt-1 text-[13px] text-text-secondary">
-                주문 생성 API에 필요한 배송지 주소를 입력해 주세요.
+                배송지를 확인하고 서버가 발급한 결제 지갑으로 주문을 진행합니다.
               </p>
             </div>
             <Input
@@ -547,6 +555,14 @@ export function CartClient({ initialCart }: { initialCart: CartState }) {
               value={shippingAddress}
               onChange={(event) => setShippingAddress(event.target.value)}
             />
+            <div className="rounded-[1rem] border border-border bg-surface-sunken px-4 py-3">
+              <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-text-secondary">
+                결제 지갑 주소
+              </p>
+              <p className="mt-2 break-all font-mono text-[13px] text-foreground">
+                {paymentProfileQuery.data?.walletId ?? "지갑을 준비 중입니다."}
+              </p>
+            </div>
             <div className="flex gap-2">
               <Button
                 variant="outline"
@@ -562,13 +578,18 @@ export function CartClient({ initialCart }: { initialCart: CartState }) {
                   updateQuantityMutation.isPending ||
                   deleteCartItemMutation.isPending ||
                   clearCartMutation.isPending ||
-                  createOrderMutation.isPending
+                  createOrderMutation.isPending ||
+                  payOrderMutation.isPending
                 }
                 onClick={() => {
                   void checkout();
                 }}
               >
-                {pending || createOrderMutation.isPending ? "결제 진행 중..." : "확인"}
+                {pending ||
+                createOrderMutation.isPending ||
+                payOrderMutation.isPending
+                  ? "결제 진행 중..."
+                  : "확인"}
               </Button>
             </div>
           </Card>

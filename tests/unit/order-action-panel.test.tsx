@@ -24,6 +24,10 @@ vi.mock("@/hooks/api", () => ({
     mutateAsync,
     isPending: false,
   }),
+  usePayOrderMutation: () => ({
+    mutateAsync,
+    isPending: false,
+  }),
 }));
 
 describe("OrderActionPanel", () => {
@@ -37,6 +41,7 @@ describe("OrderActionPanel", () => {
       <OrderActionPanel
         orderId="order123"
         status="PENDING"
+        paymentStatus="UNPAID"
         canCancel
         canUpdateStatus
       />,
@@ -47,7 +52,14 @@ describe("OrderActionPanel", () => {
   });
 
   it("hides seller status actions by default on buyer order pages", () => {
-    render(<OrderActionPanel orderId="order123" status="PREPARING" canCancel={false} />);
+    render(
+      <OrderActionPanel
+        orderId="order123"
+        status="PREPARING"
+        paymentStatus="PAID"
+        canCancel={false}
+      />,
+    );
 
     expect(screen.queryByRole("button", { name: "배송중로 변경" })).toBeNull();
   });
@@ -72,6 +84,7 @@ describe("OrderActionPanel", () => {
       <OrderActionPanel
         orderId="order123"
         status="PREPARING"
+        paymentStatus="PAID"
         canCancel={false}
         canUpdateStatus
       />,
@@ -82,5 +95,19 @@ describe("OrderActionPanel", () => {
     expect(
       await screen.findByText("본인 상품 주문만 변경할 수 있습니다."),
     ).toBeVisible();
+  });
+
+  it("shows a retry payment action for failed orders", () => {
+    render(
+      <OrderActionPanel
+        orderId="order123"
+        status="PENDING"
+        paymentStatus="FAILED"
+        canCancel
+        canPay
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "결제 다시 시도" })).toBeVisible();
   });
 });

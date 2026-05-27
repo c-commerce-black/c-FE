@@ -1,4 +1,3 @@
-import { NextRequest } from "next/server";
 import { describe, expect, it, vi } from "vitest";
 
 const { jsonError, proxyMultipart } = vi.hoisted(() => ({
@@ -24,12 +23,11 @@ describe("/api/uploads/images route", () => {
     const formData = new FormData();
     formData.append("image", new File(["binary"], "sample.png", { type: "image/png" }));
 
-    const request = new NextRequest("http://localhost:3000/api/uploads/images", {
-      method: "POST",
-      body: formData,
-    });
+    const request = {
+      formData: vi.fn().mockResolvedValue(formData),
+    } as unknown;
 
-    const result = await POST(request);
+    const result = await POST(request as never);
 
     expect(proxyMultipart).toHaveBeenCalledTimes(1);
     const forwarded = proxyMultipart.mock.calls[0]?.[0];

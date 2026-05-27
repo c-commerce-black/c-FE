@@ -1,7 +1,7 @@
 export const isProduction = process.env.NODE_ENV === "production";
 
 const DEFAULT_DEV_URLS = {
-  API_BASE_URL: "http://localhost:8080",
+  API_BASE_URL: "http://localhost:3000",
 } as const;
 
 const DEFAULT_DEV_SITE_URL = "http://localhost:3000";

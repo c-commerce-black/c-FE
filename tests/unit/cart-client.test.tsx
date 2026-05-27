@@ -12,6 +12,7 @@ const {
   deleteCartItem,
   clearCart,
   createOrder,
+  payOrder,
 } = vi.hoisted(() => ({
   push: vi.fn(),
   refresh: vi.fn(),
@@ -19,6 +20,7 @@ const {
   deleteCartItem: vi.fn(),
   clearCart: vi.fn(),
   createOrder: vi.fn(),
+  payOrder: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -44,6 +46,14 @@ vi.mock("@/hooks/api", () => ({
   useCreateOrderMutation: () => ({
     mutateAsync: createOrder,
     isPending: false,
+  }),
+  usePayOrderMutation: () => ({
+    mutateAsync: payOrder,
+    isPending: false,
+  }),
+  usePaymentProfileQuery: () => ({
+    data: { walletId: "wallet-user-001", token: "USDC-test" },
+    isLoading: false,
   }),
 }));
 
@@ -87,7 +97,10 @@ describe("CartClient", () => {
     deleteCartItem.mockReset();
     clearCart.mockReset();
     createOrder.mockReset();
+    payOrder.mockReset();
     updateQuantity.mockResolvedValue(undefined);
+    createOrder.mockResolvedValue({ order: { id: "order-1" } });
+    payOrder.mockResolvedValue({ order: { id: "order-1", paymentStatus: "PAID" } });
     useCheckoutStore.setState({
       shippingAddress: "",
       selectedCartItemIds: [],
@@ -152,8 +165,29 @@ describe("CartClient", () => {
         quantity: 3,
       });
     });
-    expect(screen.getByRole("alert")).toHaveTextContent(
-      "샐러드 구매 가능 수량은 3개입니다.",
-    );
+    expect(screen.getByLabelText("샐러드 수량 직접 입력")).toHaveValue("3");
+  });
+
+  it("creates and pays an order with the server-issued payment wallet", async () => {
+    const user = userEvent.setup();
+    useCheckoutStore.setState({
+      shippingAddress: "서울시 강남구 테헤란로 123",
+      selectedCartItemIds: [],
+      showPriceToast: false,
+    });
+
+    render(<CartClient initialCart={createCart()} />);
+
+    await user.click(screen.getByRole("button", { name: "결제하기" }));
+    await user.click(screen.getByRole("button", { name: "확인" }));
+
+    await waitFor(() => {
+      expect(createOrder).toHaveBeenCalledWith({
+        cartItemIds: ["cart-1"],
+        shippingAddress: "서울시 강남구 테헤란로 123",
+      });
+      expect(payOrder).toHaveBeenCalledWith({ orderId: "order-1" });
+      expect(push).toHaveBeenCalledWith("/orders/order-1/success?payment=paid");
+    });
   });
 });

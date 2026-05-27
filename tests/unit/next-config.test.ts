@@ -47,7 +47,7 @@ describe("next.config rewrites", () => {
       beforeFiles: [
         {
           source: "/uploads/:path*",
-          destination: "http://localhost:8080/uploads/:path*",
+          destination: "http://localhost:3000/uploads/:path*",
         },
       ],
     });

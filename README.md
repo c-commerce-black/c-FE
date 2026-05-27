@@ -61,7 +61,7 @@ cp .env.example .env.local
 Recommended variables for development, required for deployed environments:
 
 ```env
-API_BASE_URL=http://localhost:8080
+API_BASE_URL=http://localhost:3000
 ```
 
 ## Getting Started

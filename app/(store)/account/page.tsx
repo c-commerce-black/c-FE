@@ -1,12 +1,13 @@
 import Link from "next/link";
 
+import { PaymentProfileCard } from "@/components/account/payment-profile-card";
 import { LogoutButton } from "@/components/auth";
 import { Badge } from "@/components/shared/ui";
 import { Card } from "@/components/shared/ui";
 import { EmptyState } from "@/components/shared/ui";
 import { PageFallbackNotice } from "@/components/shared/ui";
 import { getSessionToken, requireUser } from "@/lib/auth/server";
-import { ORDER_STATUS_LABELS } from "@/lib/orders";
+import { ORDER_PAYMENT_STATUS_LABELS, ORDER_STATUS_LABELS } from "@/lib/orders";
 import { getOrders } from "@/lib/orders/service";
 import { createPageLoadState, type PageLoadState } from "@/lib/shared/types";
 import { formatCurrency, formatDate } from "@/lib/shared/utils";
@@ -48,7 +49,7 @@ export default async function AccountPage() {
           </div>
           <div className="space-y-2 text-sm text-text-secondary">
             <p>{user.email}</p>
-            <p>판매자 프로필 ID: {user.sellerProfileId}</p>
+            <p className="break-all">판매자 프로필 ID: {user.sellerProfileId}</p>
             {user.shopName ? <p>상점명: {user.shopName}</p> : null}
           </div>
           <div className="flex flex-wrap gap-3">
@@ -78,12 +79,20 @@ export default async function AccountPage() {
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="text-base font-bold text-foreground">#{order.id}</p>
+                      <p className="text-base font-bold text-foreground">
+                        {order.items[0]?.name ?? "주문 상품"}
+                        {order.items.length > 1 ? ` 외 ${order.items.length - 1}건` : ""}
+                      </p>
                       <p className="mt-1 text-sm text-text-secondary">
-                        {formatDate(order.createdAt)} · {order.items.length}개 상품
+                        주문 #{order.id.slice(0, 8)} · {formatDate(order.createdAt)} · {order.items.length}개 상품
                       </p>
                     </div>
-                    <Badge tone="cyan">{ORDER_STATUS_LABELS[order.status]}</Badge>
+                    <div className="flex flex-col items-end gap-2">
+                      <Badge tone="cyan">{ORDER_STATUS_LABELS[order.status]}</Badge>
+                      <Badge tone={order.paymentStatus === "PAID" ? "teal" : "warning"}>
+                        {ORDER_PAYMENT_STATUS_LABELS[order.paymentStatus]}
+                      </Badge>
+                    </div>
                   </div>
                   <p className="mt-4 text-lg font-black tracking-[-0.04em] text-brand-primary">
                     {formatCurrency(order.finalAmount)}
@@ -100,6 +109,7 @@ export default async function AccountPage() {
             )}
           </div>
         </Card>
+        <PaymentProfileCard />
       </section>
     </div>
   );

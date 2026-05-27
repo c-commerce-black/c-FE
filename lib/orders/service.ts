@@ -20,10 +20,23 @@ const ORDER_STATUSES: Order["status"][] = [
   "CANCELLED",
 ];
 
+const ORDER_PAYMENT_STATUSES: Order["paymentStatus"][] = [
+  "UNPAID",
+  "FAILED",
+  "PARTIAL",
+  "PAID",
+];
+
 function normalizeOrderStatus(value: string): Order["status"] {
   return ORDER_STATUSES.includes(value as Order["status"])
     ? (value as Order["status"])
     : "PENDING";
+}
+
+function normalizeOrderPaymentStatus(value: string): Order["paymentStatus"] {
+  return ORDER_PAYMENT_STATUSES.includes(value as Order["paymentStatus"])
+    ? (value as Order["paymentStatus"])
+    : "UNPAID";
 }
 
 function normalizeOrder(raw: unknown): Order {
@@ -32,22 +45,48 @@ function normalizeOrder(raw: unknown): Order {
   return {
     id: readString(record, ["id", "orderId"], ""),
     status: normalizeOrderStatus(readString(record, ["status"], "PENDING")),
+    paymentStatus: normalizeOrderPaymentStatus(
+      readString(record, ["paymentStatus", "payment_status"], "UNPAID"),
+    ),
     totalAmount: readNumber(record, ["totalAmount", "totalPrice"], 0),
     discountAmount: readNumber(record, ["discountAmount", "discountPrice"], 0),
     shippingFee: readNumber(record, ["shippingFee", "deliveryFee"], 0),
     finalAmount: readNumber(record, ["finalAmount", "paymentAmount"], 0),
     shippingAddress: readString(record, ["shippingAddress", "address"], ""),
     createdAt: readTimestamp(record, ["createdAt", "createdDate"], Date.now()),
+    paidAt: readTimestamp(record, ["paidAt"], 0) || undefined,
     updatedAt: readTimestamp(record, ["updatedAt", "updatedDate"], 0) || undefined,
     items: readArray(record.items ?? record.orderItems).map((entry) => {
       const itemRecord = readRecord(entry) ?? {};
       return {
         productId: readString(itemRecord, ["productId", "id"], ""),
+        sellerId: readString(itemRecord, ["sellerId"], ""),
+        sellerShopName: readString(itemRecord, ["sellerShopName"], ""),
         name: readString(itemRecord, ["name", "productName"], "주문 상품"),
         imageUrl: readNullableString(itemRecord, ["imageUrl", "thumbnailUrl"]),
         quantity: readNumber(itemRecord, ["quantity", "count"], 1),
         price: readNumber(itemRecord, ["price", "currentPrice", "salePrice"], 0),
         dDay: readNumber(itemRecord, ["dDay", "dday"], 0) || undefined,
+      };
+    }),
+    payments: readArray(record.payments).map((entry) => {
+      const paymentRecord = readRecord(entry) ?? {};
+      return {
+        id: readString(paymentRecord, ["id"], ""),
+        sellerId: readString(paymentRecord, ["sellerId"], ""),
+        sellerShopName: readString(paymentRecord, ["sellerShopName"], ""),
+        payeeNickname: readNullableString(paymentRecord, ["payeeNickname"]),
+        token: readString(paymentRecord, ["token"], "USDC-test"),
+        amount: readNumber(paymentRecord, ["amount"], 0),
+        status: readString(paymentRecord, ["status"], "PENDING") as
+          | "PENDING"
+          | "FAILED"
+          | "COMPLETED",
+        referenceId: readString(paymentRecord, ["referenceId"], ""),
+        transferId: readNullableString(paymentRecord, ["transferId"]),
+        errorMessage: readNullableString(paymentRecord, ["errorMessage"]),
+        paidAt: readTimestamp(paymentRecord, ["paidAt"], 0) || undefined,
+        updatedAt: readTimestamp(paymentRecord, ["updatedAt"], 0) || undefined,
       };
     }),
   };
@@ -136,5 +175,17 @@ export async function updateOrderStatus(
       status: normalizeOrderStatus(readString(orderRecord, ["status"], status)),
       updatedAt: readTimestamp(orderRecord, ["updatedAt"], Date.now()),
     },
+  };
+}
+
+export async function payOrder(token: string, id: string) {
+  const response = await backendApi.post(`/api/orders/${id}/pay`, undefined, {
+    token,
+  });
+  const data = unwrapApiResponse<unknown>(response, "주문 결제에 실패했습니다.");
+  const record = readRecord(data) ?? {};
+
+  return {
+    order: normalizeOrder(record.order ?? data),
   };
 }
