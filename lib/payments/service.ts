@@ -23,6 +23,9 @@ function normalizePaymentProfile(raw: unknown): PaymentProfile | null {
 
   return {
     walletId,
+    depositAddress:
+      readString(record, ["depositAddress", "deposit_address", "walletAddress", "wallet_address"], "") ||
+      null,
     token: readString(record, ["token"], "USDC-test"),
     balance: readNumber(record, ["balance"], 0),
     updatedAt: readTimestamp(record, ["updatedAt", "updated_at"], 0) || undefined,

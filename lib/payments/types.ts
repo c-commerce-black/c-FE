@@ -1,5 +1,6 @@
 export type PaymentProfile = {
   walletId: string;
+  depositAddress?: string | null;
   token: string;
   balance: number;
   updatedAt?: number;

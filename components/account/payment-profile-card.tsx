@@ -1,15 +1,39 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 
-import { usePaymentHistoryQuery, usePaymentProfileQuery } from "@/hooks/api";
+import {
+  usePaymentHistoryQuery,
+  usePaymentProfileQuery,
+  useUpsertPaymentProfileMutation,
+} from "@/hooks/api";
 import { formatCurrency, formatDate } from "@/lib/shared/utils";
 import { Badge, Card } from "@/components/shared/ui";
 import { EmptyState } from "@/components/shared/ui";
 
 export function PaymentProfileCard() {
   const paymentProfileQuery = usePaymentProfileQuery();
+  const upsertPaymentProfileMutation = useUpsertPaymentProfileMutation();
   const paymentHistoryQuery = usePaymentHistoryQuery();
+  const paymentProfile =
+    paymentProfileQuery.data ?? upsertPaymentProfileMutation.data ?? null;
+
+  useEffect(() => {
+    if (
+      paymentProfileQuery.isSuccess &&
+      !paymentProfileQuery.data &&
+      !upsertPaymentProfileMutation.data &&
+      !upsertPaymentProfileMutation.isPending &&
+      !upsertPaymentProfileMutation.isError
+    ) {
+      upsertPaymentProfileMutation.mutate();
+    }
+  }, [
+    paymentProfileQuery.data,
+    paymentProfileQuery.isSuccess,
+    upsertPaymentProfileMutation,
+  ]);
 
   return (
     <Card className="space-y-5 p-7">
@@ -21,7 +45,7 @@ export function PaymentProfileCard() {
           결제 지갑
         </h2>
         <p className="mt-2 text-sm leading-6 text-text-secondary">
-          결제 지갑은 계정마다 서버에서 자동 발급됩니다. 이 주소로 주문 결제와 판매 정산 내역을 조회할 수 있습니다.
+          결제 지갑은 계정마다 서버에서 자동 발급됩니다. 지갑 주소로 온체인 입금과 출금 내역을 확인할 수 있습니다.
         </p>
       </div>
       <div className="grid gap-3 rounded-[1.25rem] bg-surface-sunken p-4">
@@ -31,23 +55,25 @@ export function PaymentProfileCard() {
         <div className="grid gap-3">
           <div>
             <p className="text-3xl font-black tracking-[-0.05em] text-brand-primary">
-              {formatCurrency(paymentProfileQuery.data?.balance ?? 0)}
+              {formatCurrency(paymentProfile?.balance ?? 0)}
             </p>
             <p className="mt-1 text-sm text-text-secondary">
-              {paymentProfileQuery.data?.token ?? "USDC-test"}
+              {paymentProfile?.token ?? "USDC-test"}
             </p>
           </div>
-          {paymentProfileQuery.data?.walletId ? (
+          {paymentProfile?.walletId ? (
             <div className="rounded-[1rem] border border-brand-secondary/15 bg-white/80 px-3 py-3">
               <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-secondary">
                 Active wallet
               </p>
               <p className="mt-2 break-all font-mono text-xs text-brand-secondary">
-                {paymentProfileQuery.data.walletId}
+                {paymentProfile.walletId}
               </p>
             </div>
           ) : (
-            <Badge tone="warning">지갑 미등록</Badge>
+            <Badge tone="warning">
+              {upsertPaymentProfileMutation.isPending ? "지갑 준비 중" : "지갑 미등록"}
+            </Badge>
           )}
         </div>
       </div>
@@ -59,11 +85,11 @@ export function PaymentProfileCard() {
           Wallet address
         </p>
         <p className="mt-2 break-all font-mono text-sm text-foreground">
-          {paymentProfileQuery.data?.walletId ?? "지갑을 준비 중입니다."}
+          {paymentProfile?.depositAddress ?? "지갑 주소를 준비 중입니다."}
         </p>
-        {paymentProfileQuery.data?.updatedAt ? (
+        {paymentProfile?.updatedAt ? (
           <p className="mt-2 text-sm text-text-secondary">
-            최근 동기화: {new Date(paymentProfileQuery.data.updatedAt).toLocaleString("ko-KR")}
+            최근 동기화: {new Date(paymentProfile.updatedAt).toLocaleString("ko-KR")}
           </p>
         ) : null}
       </div>
